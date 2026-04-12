@@ -1,0 +1,7 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(cmd /c \"dir \\\\\"c:\\\\Users\\\\lul\\\\Desktop\\\\Lul\\\\Python\\\\POS Esqueleto\\\\\"\")"
+    ]
+  }
+}

@@ -1,0 +1,21 @@
+# Entorno virtual
+.venv/
+
+# Base de datos
+db.sqlite3
+
+# Archivos de media (logos, imágenes de productos)
+media/
+
+# Python
+__pycache__/
+*.pyc
+*.pyo
+
+# Django
+*.log
+local_settings.py
+
+# IDEs
+.vscode/
+.idea/

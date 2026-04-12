@@ -1,0 +1,10 @@
+# Normalizar fin de línea a LF en el repositorio para todos los archivos de texto
+* text=auto eol=lf
+
+# Archivos binarios — sin conversión
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.gif binary
+*.ico binary
+*.sqlite3 binary
