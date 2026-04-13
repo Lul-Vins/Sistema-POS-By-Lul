@@ -1,0 +1,203 @@
+{% extends "base.html" %}
+
+{% block titulo %}Reportes{% endblock %}
+{% block nav_reportes %}active{% endblock %}
+
+{% block estilos_extra %}
+<style>
+  .card-resumen {
+    background: #fff;
+    border-radius: 14px;
+    padding: 1.25rem 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    border-left: 5px solid;
+  }
+  .card-resumen.ventas  { border-color: #1a1a2e; }
+  .card-resumen.usd     { border-color: #2d6a4f; }
+  .card-resumen.bs      { border-color: #6c757d; }
+  .card-resumen .label  { font-size:.82rem; color:#6c757d; margin-bottom:.2rem; }
+  .card-resumen .valor  { font-size:1.8rem; font-weight:800; color:#1a1a2e; line-height:1.1; }
+  .card-resumen .sub    { font-size:.78rem; color:#adb5bd; }
+
+  .tabla-ventas thead th  { background:#1a1a2e; color:#fff; font-weight:600; font-size:.85rem; border:none; }
+  .tabla-ventas tbody tr  { font-size:.9rem; cursor:pointer; }
+  .tabla-ventas tbody tr:hover { background:#f8f9fa; }
+  .tabla-ventas .badge-estado-completada { background:#d1fae5; color:#065f46; }
+  .tabla-ventas .badge-estado-anulada    { background:#fee2e2; color:#991b1b; }
+
+  /* Detalle expandible */
+  .fila-detalle td { background:#f8f9fa; font-size:.82rem; }
+  .detalle-items   { padding:.5rem 1rem; }
+  .detalle-item    { display:flex; justify-content:space-between; padding:.2rem 0; border-bottom:1px dashed #e9ecef; }
+  .detalle-item:last-child { border-bottom:none; }
+
+  .btn-anular {
+    font-size:.75rem; padding:2px 10px; border-radius:20px;
+    background:none; border:1px solid #dc3545; color:#dc3545;
+    transition: all .15s;
+  }
+  .btn-anular:hover { background:#dc3545; color:#fff; }
+  .btn-anular:disabled { opacity:.4; cursor:not-allowed; }
+
+  .filtro-fecha { max-width:200px; }
+</style>
+{% endblock %}
+
+
+{% block contenido %}
+<div class="d-flex align-items-center justify-content-between mb-3">
+  <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-muted"></i>Reportes de Ventas</h4>
+
+  <!-- Filtro de fecha -->
+  <form method="get" class="d-flex align-items-center gap-2">
+    <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}"
+           class="form-control form-control-sm filtro-fecha"
+           onchange="this.form.submit()">
+    <a href="?" class="btn btn-sm btn-outline-secondary">Hoy</a>
+  </form>
+</div>
+
+<!-- ── Tarjetas resumen ──────────────────────────────────────── -->
+<div class="row g-3 mb-4">
+  <div class="col-sm-4">
+    <div class="card-resumen ventas">
+      <div class="label">Ventas completadas</div>
+      <div class="valor">{{ resumen.cantidad|default:"0" }}</div>
+      <div class="sub">{{ fecha|date:"d/m/Y" }}</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card-resumen usd">
+      <div class="label">Total USD</div>
+      <div class="valor">$ {{ resumen.total_usd|default:"0.00"|floatformat:2 }}</div>
+      <div class="sub">Solo ventas completadas</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card-resumen bs">
+      <div class="label">Total Bs.</div>
+      <div class="valor">Bs. {{ resumen.total_bs|default:"0.00"|floatformat:2 }}</div>
+      <div class="sub">A tasa del momento de cada venta</div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Tabla de ventas ───────────────────────────────────────── -->
+{% if ventas %}
+<div class="bg-white rounded-3 shadow-sm overflow-hidden">
+  <table class="table tabla-ventas mb-0">
+    <thead>
+      <tr>
+        <th style="width:40px;"></th>
+        <th>#</th>
+        <th>Hora</th>
+        <th>Método</th>
+        <th>Total USD</th>
+        <th>Total Bs.</th>
+        <th>Tasa</th>
+        <th>Estado</th>
+        <th></th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for venta in ventas %}
+      <!-- Fila principal -->
+      <tr onclick="toggleDetalle({{ venta.id }})" id="fila-{{ venta.id }}">
+        <td class="text-center text-muted">
+          <i class="bi bi-chevron-right" id="chevron-{{ venta.id }}"></i>
+        </td>
+        <td class="fw-semibold">#{{ venta.id }}</td>
+        <td>{{ venta.fecha|date:"H:i" }}</td>
+        <td>{{ venta.get_metodo_pago_display }}</td>
+        <td class="fw-bold text-success">$ {{ venta.total_usd|floatformat:2 }}</td>
+        <td class="text-muted">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+        <td class="text-muted" style="font-size:.8rem;">{{ venta.tasa_aplicada }}</td>
+        <td>
+          <span class="badge badge-estado-{{ venta.estado|lower }}">
+            {{ venta.get_estado_display }}
+          </span>
+        </td>
+        <td onclick="event.stopPropagation()">
+          {% if venta.estado == 'COMPLETADA' %}
+          <button class="btn-anular" id="btn-anular-{{ venta.id }}"
+                  onclick="anularVenta({{ venta.id }})">
+            Anular
+          </button>
+          {% endif %}
+        </td>
+      </tr>
+
+      <!-- Fila de detalle (oculta) -->
+      <tr class="fila-detalle" id="detalle-{{ venta.id }}" style="display:none;">
+        <td colspan="9">
+          <div class="detalle-items">
+            {% for d in venta.detalles.all %}
+            <div class="detalle-item">
+              <span>{{ d.cantidad }}x {{ d.producto.nombre }}</span>
+              <span class="text-muted">$ {{ d.precio_usd_capturado|floatformat:2 }} c/u → <strong>$ {{ d.subtotal_usd|floatformat:2 }}</strong></span>
+            </div>
+            {% endfor %}
+            {% if venta.notas %}
+            <div class="mt-1 text-muted fst-italic" style="font-size:.8rem;">
+              <i class="bi bi-chat-left-text me-1"></i>{{ venta.notas }}
+            </div>
+            {% endif %}
+          </div>
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+</div>
+
+{% else %}
+<div class="text-center text-muted py-5">
+  <i class="bi bi-inbox" style="font-size:3rem; display:block; margin-bottom:.5rem;"></i>
+  No hay ventas registradas para el {{ fecha|date:"d/m/Y" }}.
+</div>
+{% endif %}
+
+{% endblock %}
+
+
+{% block scripts_extra %}
+<script>
+  const CSRF_REPORTES = "{{ csrf_token }}";
+
+  function toggleDetalle(id) {
+    const fila    = document.getElementById(`detalle-${id}`);
+    const chevron = document.getElementById(`chevron-${id}`);
+    const visible = fila.style.display !== 'none';
+    fila.style.display = visible ? 'none' : 'table-row';
+    chevron.className  = visible ? 'bi bi-chevron-right' : 'bi bi-chevron-down text-success';
+  }
+
+  function anularVenta(id) {
+    if (!confirm(`¿Anular la venta #${id}? El stock de los productos será devuelto.`)) return;
+
+    const btn = document.getElementById(`btn-anular-${id}`);
+    btn.disabled     = true;
+    btn.textContent  = '...';
+
+    fetch(`/reportes/anular/${id}/`, {
+      method:  'POST',
+      headers: { 'X-CSRFToken': CSRF_REPORTES },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          location.reload();
+        } else {
+          alert(data.error || 'Error al anular.');
+          btn.disabled    = false;
+          btn.textContent = 'Anular';
+        }
+      })
+      .catch(() => {
+        alert('Error de conexión.');
+        btn.disabled    = false;
+        btn.textContent = 'Anular';
+      });
+  }
+</script>
+{% endblock %}

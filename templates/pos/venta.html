@@ -452,6 +452,71 @@
   <!-- ══ FIN CARRITO ════════════════════════════════════════════ -->
 
 </div>
+
+
+<!-- ══ MODAL DE COBRO ══════════════════════════════════════════ -->
+<div class="modal fade" id="modalCobro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header border-0" style="background:#1a1a2e; color:#fff;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Confirmar Cobro</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body px-4 pt-3 pb-2">
+
+        <!-- Resumen de totales -->
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted" style="font-size:.9rem;">Total a cobrar</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <span style="font-size:2rem; font-weight:800; color:#1a1a2e;" id="cobro-total-usd">$ 0.00</span>
+          <span style="font-size:1.1rem; color:#6c757d;" id="cobro-total-bs">Bs. 0,00</span>
+        </div>
+        <hr class="my-2">
+
+        <!-- Método de pago -->
+        <p class="fw-semibold mb-2" style="font-size:.9rem;">Método de pago</p>
+        <div class="d-flex flex-wrap gap-2 mb-3" id="metodos-pago">
+          {% for valor, etiqueta in metodos_pago %}
+          <input type="radio" class="btn-check" name="metodo" id="mp-{{ valor }}" value="{{ valor }}" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-{{ valor }}">{{ etiqueta }}</label>
+          {% endfor %}
+        </div>
+
+        <!-- Monto recibido + vuelto (solo efectivo) -->
+        <div id="bloque-vuelto" style="display:none;">
+          <label class="fw-semibold mb-1" style="font-size:.9rem;" id="label-monto-recibido">Monto recibido (USD)</label>
+          <input type="number" id="monto-recibido" class="form-control mb-2" placeholder="0.00" min="0" step="0.01" style="font-size:1.1rem; font-weight:700;">
+          <div class="d-flex justify-content-between px-1">
+            <span class="text-muted" style="font-size:.85rem;">Vuelto</span>
+            <span id="vuelto-display" style="font-size:1rem; font-weight:700; color:#2d6a4f;">$ 0.00</span>
+          </div>
+          <hr class="mt-2 mb-2">
+        </div>
+
+        <!-- Notas opcionales -->
+        <textarea id="cobro-notas" class="form-control" rows="1" placeholder="Notas (opcional)" style="font-size:.85rem; resize:none;"></textarea>
+
+        <!-- Feedback -->
+        <div id="cobro-feedback" class="mt-2 text-danger" style="font-size:.85rem; min-height:1.2rem;"></div>
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4 pt-1">
+        <button type="button" class="btn btn-light w-100 mb-2" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="w-100 fw-bold text-white border-0 py-3 rounded-3"
+                id="btn-confirmar-cobro"
+                style="background:#2d6a4f; font-size:1.1rem;">
+          <i class="bi bi-check-circle me-2"></i>Confirmar venta
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL COBRO ══════════════════════════════════════════ -->
+
 {% endblock %}
 
 
@@ -659,8 +724,131 @@
     return n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   }
 
+  // ── Modal de cobro ────────────────────────────────────────
+  const URL_PROCESAR   = "{% url 'pos:procesar_venta' %}";
+  const CSRF_VENTA     = "{{ csrf_token }}";
+  const modalCobroEl   = document.getElementById('modalCobro');
+  const modalCobro     = new bootstrap.Modal(modalCobroEl);
+  const inputRecibido  = document.getElementById('monto-recibido');
+
   function abrirModalCobro() {
-    alert('Modal de cobro — próximamente');
+    // Sincronizar totales
+    const totalUsd = parseFloat(document.getElementById('total-usd').textContent.replace('$','').trim());
+    const totalBs  = document.getElementById('total-bs').textContent;
+    document.getElementById('cobro-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
+    document.getElementById('cobro-total-bs').textContent  = totalBs;
+
+    // Limpiar estado anterior
+    document.querySelectorAll('input[name="metodo"]').forEach(r => r.checked = false);
+    document.getElementById('bloque-vuelto').style.display = 'none';
+    document.getElementById('cobro-feedback').textContent  = '';
+    document.getElementById('cobro-notas').value           = '';
+    inputRecibido.value = '';
+    document.getElementById('vuelto-display').textContent  = '$ 0.00';
+
+    modalCobro.show();
+  }
+
+  // Mostrar/ocultar bloque de vuelto según método
+  document.querySelectorAll('input[name="metodo"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+      const esEfectivo = ['EFECTIVO_USD', 'EFECTIVO_BS'].includes(this.value);
+      const bloqueVuelto = document.getElementById('bloque-vuelto');
+      const labelRecibido = document.getElementById('label-monto-recibido');
+
+      bloqueVuelto.style.display = esEfectivo ? 'block' : 'none';
+
+      if (this.value === 'EFECTIVO_BS') {
+        labelRecibido.textContent = 'Monto recibido (Bs.)';
+        calcularVuelto('BS');
+      } else {
+        labelRecibido.textContent = 'Monto recibido (USD)';
+        calcularVuelto('USD');
+      }
+
+      if (esEfectivo) inputRecibido.focus();
+    });
+  });
+
+  // Calcular vuelto en tiempo real
+  inputRecibido.addEventListener('input', function () {
+    const metodo = document.querySelector('input[name="metodo"]:checked')?.value;
+    calcularVuelto(metodo === 'EFECTIVO_BS' ? 'BS' : 'USD');
+  });
+
+  function calcularVuelto(moneda) {
+    const totalUsd = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+    const recibido = parseFloat(inputRecibido.value) || 0;
+    const el       = document.getElementById('vuelto-display');
+
+    if (moneda === 'BS') {
+      const totalBsNum = totalUsd * TASA;
+      const vuelto     = recibido - totalBsNum;
+      el.textContent   = `Bs. ${formatBs(Math.max(vuelto, 0))}`;
+      el.style.color   = vuelto >= 0 ? '#2d6a4f' : '#dc3545';
+    } else {
+      const vuelto   = recibido - totalUsd;
+      el.textContent = `$ ${Math.max(vuelto, 0).toFixed(2)}`;
+      el.style.color = vuelto >= 0 ? '#2d6a4f' : '#dc3545';
+    }
+  }
+
+  // Confirmar venta
+  document.getElementById('btn-confirmar-cobro').addEventListener('click', function () {
+    const metodo   = document.querySelector('input[name="metodo"]:checked')?.value;
+    const feedback = document.getElementById('cobro-feedback');
+
+    if (!metodo) {
+      feedback.textContent = 'Selecciona un método de pago.';
+      return;
+    }
+
+    const payload = {
+      carrito:     Object.entries(carrito).map(([id, item]) => ({ id, cantidad: item.cantidad })),
+      metodo_pago: metodo,
+      notas:       document.getElementById('cobro-notas').value.trim(),
+    };
+
+    this.disabled    = true;
+    this.innerHTML   = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+    feedback.textContent = '';
+
+    fetch(URL_PROCESAR, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_VENTA },
+      body:    JSON.stringify(payload),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          modalCobro.hide();
+          vaciarCarrito();
+          mostrarConfirmacion(data);
+        } else {
+          feedback.textContent = data.error || 'Error al procesar la venta.';
+        }
+      })
+      .catch(() => { feedback.textContent = 'Error de conexión.'; })
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar venta';
+      });
+  });
+
+  function mostrarConfirmacion(data) {
+    // Toast de éxito temporal
+    const toast = document.createElement('div');
+    toast.style.cssText = `
+      position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
+      background:#1b4332; color:#fff; padding:1rem 2rem; border-radius:12px;
+      font-weight:700; font-size:1rem; z-index:9999;
+      box-shadow:0 8px 24px rgba(0,0,0,0.2);
+      display:flex; align-items:center; gap:.75rem;
+    `;
+    toast.innerHTML = `<i class="bi bi-check-circle-fill fs-5"></i> Venta #${data.venta_id} registrada — $ ${data.total_usd.toFixed(2)}`;
+    document.body.appendChild(toast);
+    setTimeout(() => toast.remove(), 3500);
+    buscador.focus();
   }
 
   // ── Hook global: llamado desde base.html al actualizar tasa ──
