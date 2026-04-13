@@ -39,8 +39,11 @@ class Producto(models.Model):
         return self.nombre
 
     def get_precio_bs(self):
-        """Calcula el precio en Bs usando la tasa de cambio vigente."""
-        return self.precio_usd * Moneda.get_tasa_activa()
+        """Calcula el precio en Bs usando la tasa de cambio vigente. Retorna None si no hay tasa configurada."""
+        try:
+            return self.precio_usd * Moneda.get_tasa_activa()
+        except ValueError:
+            return None
 
     @property
     def stock_bajo(self):
