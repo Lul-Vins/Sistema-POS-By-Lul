@@ -5,15 +5,13 @@ from configuracion.models import Empresa, Moneda
 
 
 def venta(request):
-    try:
-        tasa = Moneda.get_tasa_activa()
-    except ValueError:
-        tasa = None
-
+    moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first()
+    tasa    = moneda.tasa_cambio if moneda else None
 
     return render(request, 'pos/venta.html', {
-        'tasa': tasa,
+        'tasa':    tasa,
+        'moneda':  moneda,
         'empresa': empresa,
     })
 

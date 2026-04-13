@@ -37,19 +37,98 @@
     .navbar-pos .nav-link.active {
       color: #ffffff;
     }
-    .navbar-pos .tasa-badge {
+
+    /* Badge de tasa — clickeable */
+    .tasa-badge {
       background-color: #2d6a4f;
       color: #fff;
       font-size: 0.85rem;
-      padding: 4px 10px;
+      padding: 4px 12px;
       border-radius: 20px;
       font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tasa-badge:hover {
+      background-color: #1b4332;
+    }
+    .tasa-badge.sin-tasa {
+      background-color: #842029;
+    }
+    .tasa-badge .bi-pencil-fill {
+      font-size: 0.7rem;
+      opacity: 0.8;
     }
 
     /* ── Contenido principal ───────────────────────────────── */
     .content-wrapper {
       padding-top: 1.5rem;
       padding-bottom: 2rem;
+    }
+
+    /* ── Modal de tasa ─────────────────────────────────────── */
+    .modal-tasa .modal-header {
+      background-color: #1a1a2e;
+      color: #fff;
+      border-bottom: none;
+    }
+    .modal-tasa .btn-close {
+      filter: invert(1);
+    }
+    .modal-tasa .tasa-actual-display {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #2d6a4f;
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+    .modal-tasa .ultima-act {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .modal-tasa .input-nueva-tasa {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 0.5rem;
+    }
+    .modal-tasa .input-nueva-tasa:focus {
+      border-color: #2d6a4f;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.15);
+    }
+    .modal-tasa .nota-bcv {
+      font-size: 0.78rem;
+      color: #6c757d;
+      background-color: #f8f9fa;
+      border-left: 3px solid #ffc107;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-top: 0.75rem;
+    }
+    .modal-tasa .btn-guardar-tasa {
+      background-color: #2d6a4f;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .modal-tasa .btn-guardar-tasa:hover {
+      background-color: #1b4332;
+    }
+    .modal-tasa .feedback {
+      font-size: 0.85rem;
+      min-height: 1.2rem;
+      text-align: center;
     }
   </style>
 
@@ -92,21 +171,165 @@
         </li>
       </ul>
 
-      <!-- Tasa activa visible en todo momento -->
-      {% if tasa %}
-        <span class="tasa-badge me-3">
-          <i class="bi bi-currency-dollar"></i>1 = Bs. {{ tasa }}
+      <!-- Badge de tasa: clickeable para editar -->
+      <button
+        class="tasa-badge me-3 {% if not tasa %}sin-tasa{% endif %}"
+        id="btn-abrir-tasa"
+        data-bs-toggle="modal"
+        data-bs-target="#modalTasa"
+        title="Clic para actualizar tasa BCV"
+      >
+        <i class="bi bi-currency-dollar"></i>
+        <span id="tasa-navbar-texto">
+          {% if tasa %}1 = Bs. {{ tasa }}{% else %}Sin tasa — clic para configurar{% endif %}
         </span>
-      {% endif %}
+        <i class="bi bi-pencil-fill"></i>
+      </button>
     </div>
   </nav>
   <!-- ══ FIN NAVBAR ═══════════════════════════════════════════ -->
+
+
+  <!-- ══ MODAL: ACTUALIZAR TASA BCV ══════════════════════════ -->
+  <div class="modal fade modal-tasa" id="modalTasa" tabindex="-1" aria-labelledby="modalTasaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTasaLabel">
+            <i class="bi bi-bank me-2"></i>Tasa BCV
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="tasa-actual-display" id="tasa-actual-display">
+            {% if tasa %}Bs. {{ tasa }}{% else %}—{% endif %}
+          </div>
+          <div class="ultima-act" id="ultima-act">
+            {% if moneda %}Última actualización: {{ moneda.ultima_actualizacion|date:"d/m/Y H:i" }}{% endif %}
+          </div>
+
+          <label class="form-label fw-semibold">Nueva tasa del día</label>
+          <input
+            type="number"
+            id="input-nueva-tasa"
+            class="form-control input-nueva-tasa"
+            placeholder="Ej: 41.50"
+            min="0.01"
+            step="0.01"
+          >
+
+          <div class="nota-bcv mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            La tasa BCV se publica de lunes a viernes entre 4–5 pm y entra en vigencia el siguiente día hábil.
+          </div>
+
+          <div class="feedback mt-2" id="tasa-feedback"></div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-guardar-tasa w-100" id="btn-guardar-tasa">
+            <i class="bi bi-check-lg me-1"></i>Guardar tasa
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ══ FIN MODAL TASA ═══════════════════════════════════════ -->
+
 
   <div class="content-wrapper container-fluid">
     {% block contenido %}{% endblock %}
   </div>
 
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ── Modal de tasa BCV ───────────────────────────────────
+    const URL_ACTUALIZAR_TASA = "{% url 'configuracion:actualizar_tasa' %}";
+    const CSRF_TOKEN = "{{ csrf_token }}";
+
+    const inputTasa   = document.getElementById('input-nueva-tasa');
+    const btnGuardar  = document.getElementById('btn-guardar-tasa');
+    const feedback    = document.getElementById('tasa-feedback');
+
+    // Limpiar feedback al abrir el modal
+    document.getElementById('modalTasa').addEventListener('show.bs.modal', () => {
+      feedback.textContent = '';
+      feedback.className   = 'feedback mt-2';
+      inputTasa.value      = '';
+      inputTasa.focus();
+    });
+
+    // Focus al input cuando el modal termina de abrir
+    document.getElementById('modalTasa').addEventListener('shown.bs.modal', () => {
+      inputTasa.focus();
+    });
+
+    // Guardar con Enter
+    inputTasa.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnGuardar.click();
+    });
+
+    btnGuardar.addEventListener('click', () => {
+      const valor = parseFloat(inputTasa.value);
+
+      if (!valor || valor <= 0) {
+        mostrarFeedback('Ingresa una tasa válida mayor a 0.', 'error');
+        return;
+      }
+
+      btnGuardar.disabled = true;
+      btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+      fetch(URL_ACTUALIZAR_TASA, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN,
+        },
+        body: JSON.stringify({ tasa: valor }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            // Actualizar navbar y display del modal sin recargar
+            const textoTasa = `1 = Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('tasa-navbar-texto').textContent = textoTasa;
+            document.getElementById('btn-abrir-tasa').classList.remove('sin-tasa');
+            document.getElementById('tasa-actual-display').textContent = `Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('ultima-act').textContent = `Última actualización: ${data.ultima_actualizacion}`;
+
+            // Notificar a la página activa para que recalcule precios y carrito
+            if (typeof window.onTasaActualizada === 'function') {
+              window.onTasaActualizada(data.tasa);
+            }
+
+            mostrarFeedback('Tasa actualizada correctamente.', 'ok');
+
+            // Cerrar el modal tras 1 segundo
+            setTimeout(() => {
+              bootstrap.Modal.getInstance(document.getElementById('modalTasa')).hide();
+            }, 1000);
+          } else {
+            mostrarFeedback(data.error || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => mostrarFeedback('Error de conexión.', 'error'))
+        .finally(() => {
+          btnGuardar.disabled = false;
+          btnGuardar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar tasa';
+        });
+    });
+
+    function mostrarFeedback(msg, tipo) {
+      feedback.textContent = msg;
+      feedback.className   = `feedback mt-2 ${tipo === 'ok' ? 'text-success' : 'text-danger'}`;
+    }
+  </script>
+
   {% block scripts_extra %}{% endblock %}
 </body>
 </html>

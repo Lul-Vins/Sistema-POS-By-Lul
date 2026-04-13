@@ -227,16 +227,26 @@
     border-bottom: none;
   }
 
-  .carrito-item .item-nombre {
+  .carrito-item .item-info {
     flex: 1;
+    min-width: 0; /* permite que el texto se comprima en el flex */
+  }
+
+  .carrito-item .item-nombre {
     font-size: 0.92rem;
     font-weight: 600;
     line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .carrito-item .item-precio {
     font-size: 0.82rem;
     color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
 
   .carrito-item .item-subtotal {
@@ -447,7 +457,7 @@
 
 {% block scripts_extra %}
 <script>
-  const TASA        = parseFloat("{{ tasa|default:'0' }}") || 0;
+  let TASA          = parseFloat("{{ tasa|default:'0' }}") || 0;
   const URL_BUSCAR  = "{% url 'pos:buscar_productos' %}";
   let carrito       = {};
   let timerBusqueda = null;
@@ -618,8 +628,8 @@
       el.className  = 'carrito-item';
       el.dataset.id = id;
       el.innerHTML  = `
-        <div style="flex:1;min-width:0;">
-          <div class="item-nombre">${item.nombre}</div>
+        <div class="item-info">
+          <div class="item-nombre" title="${item.nombre}">${truncar(item.nombre)}</div>
           <div class="item-precio">$ ${item.precio_usd.toFixed(2)} c/u</div>
         </div>
         <div class="qty-control">
@@ -635,6 +645,10 @@
     actualizarTotales(totalUsd);
   }
 
+  function truncar(texto, max = 40) {
+    return texto.length > max ? texto.slice(0, max) + '…' : texto;
+  }
+
   function actualizarTotales(totalUsd) {
     const totalBs = totalUsd * TASA;
     document.getElementById('total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
@@ -648,6 +662,23 @@
   function abrirModalCobro() {
     alert('Modal de cobro — próximamente');
   }
+
+  // ── Hook global: llamado desde base.html al actualizar tasa ──
+  window.onTasaActualizada = function(nuevaTasa) {
+    TASA = nuevaTasa;
+
+    // Recalcular Bs en todas las tarjetas visibles del grid
+    document.querySelectorAll('.producto-card').forEach(card => {
+      const precioUsd = parseFloat(card.dataset.precio);
+      const bsEl      = card.querySelector('.precio-bs');
+      if (bsEl && precioUsd) {
+        bsEl.textContent = `Bs. ${(precioUsd * TASA).toFixed(2)}`;
+      }
+    });
+
+    // Recalcular totales del carrito con la nueva tasa
+    renderCarrito();
+  };
 
   // Estado inicial al cargar
   mostrarEstado('inicial');
