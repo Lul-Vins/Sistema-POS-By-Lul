@@ -24,6 +24,7 @@ class Producto(models.Model):
     )
     nombre = models.CharField(max_length=200)
     codigo_barras = models.CharField(max_length=100, blank=True, null=True, unique=True)
+    costo_usd = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
     precio_usd = models.DecimalField(max_digits=10, decimal_places=4)
     stock_actual = models.IntegerField(default=0)
     stock_minimo = models.IntegerField(default=5)
@@ -43,6 +44,16 @@ class Producto(models.Model):
         try:
             return self.precio_usd * Moneda.get_tasa_activa()
         except ValueError:
+            return None
+
+    @property
+    def margen(self):
+        """Margen de ganancia en % sobre el precio de venta. None si no hay costo cargado."""
+        try:
+            if not self.costo_usd or self.precio_usd == 0:
+                return None
+            return float(round((self.precio_usd - self.costo_usd) / self.precio_usd * 100, 1))
+        except Exception:
             return None
 
     @property

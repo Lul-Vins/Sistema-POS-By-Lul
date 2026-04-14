@@ -1,0 +1,648 @@
+{% extends "base.html" %}
+
+{% block titulo %}Inventario{% endblock %}
+{% block nav_inventario %}active{% endblock %}
+
+{% block estilos_extra %}
+<style>
+  /* ── Barra superior ──────────────────────────────────────── */
+  .inv-toolbar {
+    display: flex;
+    align-items: center;
+    gap: .75rem;
+    flex-wrap: wrap;
+    margin-bottom: 1rem;
+  }
+
+  .inv-toolbar .buscador-inv {
+    flex: 1;
+    min-width: 200px;
+    max-width: 340px;
+  }
+
+  .btn-nuevo {
+    background-color: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .45rem 1.1rem;
+    font-weight: 700;
+    font-size: .95rem;
+    white-space: nowrap;
+  }
+  .btn-nuevo:hover { background-color: #1b4332; color: #fff; }
+
+  /* Filtros rápidos */
+  .filtros-rapidos { display: flex; gap: .4rem; flex-wrap: wrap; }
+  .filtro-btn {
+    font-size: .8rem;
+    padding: 3px 12px;
+    border-radius: 20px;
+    border: 1px solid #dee2e6;
+    background: #fff;
+    cursor: pointer;
+    color: #495057;
+    transition: all .15s;
+  }
+  .filtro-btn.activo, .filtro-btn:hover { background: #1a1a2e; color: #fff; border-color: #1a1a2e; }
+  .filtro-btn.stock-bajo.activo { background: #856404; border-color: #856404; }
+  .filtro-btn.agotados.activo   { background: #dc3545; border-color: #dc3545; }
+
+  /* ── Tabla ───────────────────────────────────────────────── */
+  .tabla-inv { font-size: .88rem; }
+  .tabla-inv thead th {
+    background: #1a1a2e;
+    color: #fff;
+    font-weight: 600;
+    font-size: .82rem;
+    border: none;
+    white-space: nowrap;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+  }
+  .tabla-inv tbody tr {
+    cursor: pointer;
+    transition: background .1s;
+    vertical-align: middle;
+  }
+  .tabla-inv tbody tr:hover { background: #f0faf4; }
+
+  /* Estados de fila */
+  .fila-agotado   { background: #fff5f5 !important; }
+  .fila-stock-bajo { background: #fffbea !important; }
+  .fila-inactivo  { opacity: .5; }
+
+  /* Badge de estado */
+  .badge-ok        { background: #d1fae5; color: #065f46; font-size: .72rem; }
+  .badge-stock-bajo { background: #fef3c7; color: #92400e; font-size: .72rem; }
+  .badge-agotado   { background: #fee2e2; color: #991b1b; font-size: .72rem; }
+  .badge-inactivo  { background: #e9ecef; color: #6c757d; font-size: .72rem; }
+
+  /* Margen */
+  .margen-alto   { color: #065f46; font-weight: 700; }
+  .margen-medio  { color: #92400e; font-weight: 600; }
+  .margen-bajo   { color: #dc3545; font-weight: 600; }
+
+  /* Imagen miniatura */
+  .img-mini {
+    width: 38px; height: 38px;
+    object-fit: contain;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    background: #f8f9fa;
+  }
+  .img-mini-placeholder {
+    width: 38px; height: 38px;
+    border-radius: 6px;
+    border: 1px solid #e9ecef;
+    background: #f8f9fa;
+    display: flex; align-items: center; justify-content: center;
+    color: #ced4da; font-size: 1rem;
+  }
+
+  /* Contadores de estado */
+  .resumen-bar {
+    display: flex; gap: 1rem; flex-wrap: wrap;
+    margin-bottom: .75rem;
+    font-size: .82rem;
+    color: #6c757d;
+  }
+  .resumen-bar span strong { color: #1a1a2e; }
+  .resumen-bar .alerta { color: #dc3545; }
+  .resumen-bar .advertencia { color: #92400e; }
+
+  /* ── Modal de producto ───────────────────────────────────── */
+  .modal-producto .modal-header {
+    background: #1a1a2e; color: #fff; border-bottom: none;
+  }
+  .modal-producto .btn-close { filter: invert(1); }
+  .modal-producto .form-label { font-size: .85rem; font-weight: 600; margin-bottom: .25rem; }
+  .modal-producto .form-control, .modal-producto .form-select {
+    font-size: .9rem;
+  }
+  .modal-producto .seccion-titulo {
+    font-size: .75rem; font-weight: 700; color: #6c757d;
+    text-transform: uppercase; letter-spacing: .5px;
+    border-bottom: 1px solid #e9ecef; padding-bottom: .3rem;
+    margin-bottom: .75rem; margin-top: .5rem;
+  }
+  .preview-imagen {
+    width: 80px; height: 80px;
+    object-fit: contain; border-radius: 8px;
+    border: 2px solid #e9ecef; background: #f8f9fa;
+    display: none;
+  }
+  .btn-eliminar-prod {
+    color: #dc3545; background: none; border: 1px solid #dc3545;
+    border-radius: 8px; padding: .35rem 1rem; font-size: .85rem;
+    transition: all .15s;
+  }
+  .btn-eliminar-prod:hover { background: #dc3545; color: #fff; }
+
+  /* Sin productos */
+  .sin-productos {
+    text-align: center; color: #adb5bd; padding: 3rem 0;
+  }
+  .sin-productos i { font-size: 3rem; display: block; margin-bottom: .5rem; }
+
+  /* Tabla scroll */
+  .tabla-wrap {
+    background: #fff; border-radius: 12px;
+    box-shadow: 0 2px 12px rgba(0,0,0,.07);
+    overflow: hidden;
+    max-height: calc(100vh - 220px);
+    overflow-y: auto;
+  }
+</style>
+{% endblock %}
+
+
+{% block contenido %}
+
+<!-- ── Barra superior ─────────────────────────────────────────── -->
+<div class="inv-toolbar">
+  <h4 class="fw-bold mb-0 me-2">
+    <i class="bi bi-box-seam me-2 text-muted"></i>Inventario
+  </h4>
+
+  <input type="text" id="buscador-inv" class="form-control form-control-sm buscador-inv"
+         placeholder="Buscar producto..." autocomplete="off">
+
+  <div class="filtros-rapidos">
+    <button class="filtro-btn activo" data-filtro="todos">Todos</button>
+    <button class="filtro-btn stock-bajo" data-filtro="stock-bajo">
+      <i class="bi bi-exclamation-triangle me-1"></i>Stock bajo
+    </button>
+    <button class="filtro-btn agotados" data-filtro="agotados">
+      <i class="bi bi-x-circle me-1"></i>Agotados
+    </button>
+    <button class="filtro-btn" data-filtro="inactivos">Inactivos</button>
+
+    <select id="filtro-categoria" class="form-select form-select-sm" style="width:auto; font-size:.8rem;">
+      <option value="">Todas las categorías</option>
+      {% for cat in categorias %}
+      <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+      {% endfor %}
+    </select>
+  </div>
+
+  <button class="btn-nuevo ms-auto" onclick="abrirModalNuevo()">
+    <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+  </button>
+</div>
+
+<!-- ── Resumen rápido ─────────────────────────────────────────── -->
+<div class="resumen-bar" id="resumen-bar">
+  <!-- Se llena por JS -->
+</div>
+
+<!-- ── Tabla de productos ─────────────────────────────────────── -->
+<div class="tabla-wrap">
+  <table class="table tabla-inv mb-0" id="tabla-productos">
+    <thead>
+      <tr>
+        <th style="width:50px;"></th>
+        <th>Nombre</th>
+        <th>Categoría</th>
+        <th>Costo USD</th>
+        <th>Precio USD</th>
+        <th>Precio Bs.</th>
+        <th>Ganancia</th>
+        <th>Stock</th>
+        <th>Estado</th>
+      </tr>
+    </thead>
+    <tbody id="tbody-productos">
+      {% for p in productos %}
+      <tr class="fila-producto
+                 {% if not p.activo %}fila-inactivo
+                 {% elif p.stock_actual == 0 %}fila-agotado
+                 {% elif p.stock_bajo %}fila-stock-bajo
+                 {% endif %}"
+          data-id="{{ p.id }}"
+          data-nombre="{{ p.nombre }}"
+          data-categoria-id="{{ p.categoria_id|default:'' }}"
+          data-codigo="{{ p.codigo_barras|default:'' }}"
+          data-costo="{% if p.costo_usd %}{{ p.costo_usd|stringformat:'.4f' }}{% endif %}"
+          data-precio="{{ p.precio_usd|stringformat:'.4f' }}"
+          data-stock="{{ p.stock_actual }}"
+          data-stock-min="{{ p.stock_minimo }}"
+          data-activo="{{ p.activo|yesno:'true,false' }}"
+          data-imagen="{% if p.imagen %}{{ p.imagen.url }}{% endif %}"
+          data-stock-estado="{% if p.stock_actual == 0 %}agotado{% elif p.stock_bajo %}stock-bajo{% else %}ok{% endif %}"
+          data-categoria-nombre="{{ p.categoria.nombre|default:'' }}"
+          onclick="abrirModalEditar(this)"
+      >
+        <td>
+          {% if p.imagen %}
+            <img src="{{ p.imagen.url }}" class="img-mini" alt="{{ p.nombre }}">
+          {% else %}
+            <div class="img-mini-placeholder"><i class="bi bi-box-seam"></i></div>
+          {% endif %}
+        </td>
+        <td class="fw-semibold">{{ p.nombre }}</td>
+        <td class="text-muted">{{ p.categoria.nombre|default:"—" }}</td>
+        <td>{% if p.costo_usd %}$ {{ p.costo_usd|floatformat:2 }}{% else %}<span class="text-muted">—</span>{% endif %}</td>
+        <td class="fw-bold text-success">$ {{ p.precio_usd|floatformat:2 }}</td>
+        <td class="text-muted">
+          {% if p.get_precio_bs %}Bs. {{ p.get_precio_bs|floatformat:2 }}{% else %}—{% endif %}
+        </td>
+        <td>
+          {% if p.margen is not None %}
+            <span class="{% if p.margen >= 30 %}margen-alto{% elif p.margen >= 15 %}margen-medio{% else %}margen-bajo{% endif %}">
+              {{ p.margen }}%
+            </span>
+          {% else %}
+            <span class="text-muted">—</span>
+          {% endif %}
+        </td>
+        <td>
+          <span class="fw-bold {% if p.stock_actual == 0 %}text-danger{% elif p.stock_bajo %}text-warning{% else %}text-dark{% endif %}">
+            {{ p.stock_actual }}
+          </span>
+        </td>
+        <td>
+          {% if not p.activo %}
+            <span class="badge badge-inactivo">Inactivo</span>
+          {% elif p.stock_actual == 0 %}
+            <span class="badge badge-agotado">Agotado</span>
+          {% elif p.stock_bajo %}
+            <span class="badge badge-stock-bajo"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock bajo</span>
+          {% else %}
+            <span class="badge badge-ok"><i class="bi bi-check-circle-fill me-1"></i>OK</span>
+          {% endif %}
+        </td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  {% if not productos %}
+  <div class="sin-productos">
+    <i class="bi bi-box-seam"></i>
+    No hay productos registrados. <button class="btn btn-link p-0" onclick="abrirModalNuevo()">Agrega el primero.</button>
+  </div>
+  {% endif %}
+</div>
+
+
+<!-- ══ MODAL PRODUCTO ═══════════════════════════════════════════ -->
+<div class="modal fade modal-producto" id="modalProducto" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable" style="max-width:520px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold" id="modal-producto-titulo">
+          <i class="bi bi-box-seam me-2"></i>Nuevo producto
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body px-4">
+        <input type="hidden" id="prod-pk" value="0">
+
+        <!-- Sección: Identificación -->
+        <div class="seccion-titulo">Identificación</div>
+        <div class="mb-3">
+          <label class="form-label">Nombre <span class="text-danger">*</span></label>
+          <input type="text" id="prod-nombre" class="form-control" placeholder="Ej: Arroz Diana 1kg" maxlength="200">
+        </div>
+        <div class="row g-2 mb-3">
+          <div class="col-7">
+            <label class="form-label">Categoría</label>
+            <select id="prod-categoria" class="form-select">
+              <option value="">Sin categoría</option>
+              {% for cat in categorias %}
+              <option value="{{ cat.id }}">{{ cat.nombre }}</option>
+              {% endfor %}
+            </select>
+          </div>
+          <div class="col-5">
+            <label class="form-label">Código de barras</label>
+            <input type="text" id="prod-codigo" class="form-control" placeholder="Opcional">
+          </div>
+        </div>
+
+        <!-- Sección: Precios -->
+        <div class="seccion-titulo">Precios</div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Costo USD</label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">$</span>
+              <input type="number" id="prod-costo" class="form-control" placeholder="0.00" min="0" max="999999.99" step="0.01">
+            </div>
+            <div class="form-text">Lo que pagaste por unidad</div>
+          </div>
+          <div class="col-6">
+            <label class="form-label">Precio de venta USD <span class="text-danger">*</span></label>
+            <div class="input-group input-group-sm">
+              <span class="input-group-text">$</span>
+              <input type="number" id="prod-precio" class="form-control" placeholder="0.00" min="0.01" max="999999.99" step="0.01">
+            </div>
+          </div>
+        </div>
+
+        <!-- Preview margen en tiempo real -->
+        <div id="preview-margen" class="mb-3 p-2 rounded" style="background:#f8f9fa; font-size:.83rem; display:none;">
+          <i class="bi bi-graph-up me-1"></i>
+          Margen estimado: <strong id="preview-margen-valor">—</strong>
+          &nbsp;|&nbsp; Bs.: <strong id="preview-precio-bs">—</strong>
+        </div>
+
+        <!-- Sección: Stock -->
+        <div class="seccion-titulo">Stock</div>
+        <div class="row g-2 mb-3">
+          <div class="col-6">
+            <label class="form-label">Stock actual</label>
+            <input type="number" id="prod-stock" class="form-control" value="0" min="0">
+          </div>
+          <div class="col-6">
+            <label class="form-label">Stock mínimo <span class="text-muted fw-normal">(alerta)</span></label>
+            <input type="number" id="prod-stock-min" class="form-control" value="5" min="0">
+          </div>
+        </div>
+
+        <!-- Sección: Imagen y estado -->
+        <div class="seccion-titulo">Imagen y estado</div>
+        <div class="d-flex align-items-center gap-3 mb-3">
+          <img id="preview-imagen" src="" class="preview-imagen" alt="Preview">
+          <div>
+            <label class="form-label">Imagen (opcional)</label>
+            <input type="file" id="prod-imagen" class="form-control form-control-sm" accept="image/*">
+          </div>
+        </div>
+
+        <div class="form-check form-switch mb-2">
+          <input class="form-check-input" type="checkbox" id="prod-activo" checked>
+          <label class="form-check-label" for="prod-activo">Producto activo (visible en el POS)</label>
+        </div>
+
+        <!-- Feedback -->
+        <div id="prod-feedback" class="mt-2 text-danger" style="font-size:.85rem; min-height:1.2rem;"></div>
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4 pt-1 d-flex flex-column gap-2">
+        <button type="button" class="btn btn-success w-100 fw-bold py-2" id="btn-guardar-prod">
+          <i class="bi bi-check-lg me-1"></i>Guardar producto
+        </button>
+        <button type="button" class="btn-eliminar-prod w-100" id="btn-eliminar-prod" style="display:none;">
+          <i class="bi bi-trash me-1"></i>Eliminar producto
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL PRODUCTO ═══════════════════════════════════════ -->
+
+{% endblock %}
+
+
+{% block scripts_extra %}
+<script>
+  const TASA_INV      = parseFloat("{{ tasa|default:'0' }}") || 0;
+  const URL_GUARDAR   = "{% url 'inventario:guardar_producto' %}";
+  const URL_ELIMINAR  = "{% url 'inventario:eliminar_producto' pk=0 %}".replace('/0/', '/');
+  const CSRF_INV      = "{{ csrf_token }}";
+
+  // ── Filtrado client-side ──────────────────────────────────
+  const buscador    = document.getElementById('buscador-inv');
+  const filtroCat   = document.getElementById('filtro-categoria');
+  let   filtroActivo = 'todos';
+
+  document.querySelectorAll('.filtro-btn').forEach(btn => {
+    btn.addEventListener('click', function () {
+      document.querySelectorAll('.filtro-btn').forEach(b => b.classList.remove('activo'));
+      this.classList.add('activo');
+      filtroActivo = this.dataset.filtro;
+      aplicarFiltros();
+    });
+  });
+
+  buscador.addEventListener('input', aplicarFiltros);
+  filtroCat.addEventListener('change', aplicarFiltros);
+
+  function aplicarFiltros() {
+    const q    = buscador.value.trim().toLowerCase();
+    const cat  = filtroCat.value;
+    const filas = document.querySelectorAll('.fila-producto');
+    let vis = 0, stockBajoCount = 0, agotadoCount = 0;
+
+    filas.forEach(fila => {
+      const nombre     = fila.dataset.nombre.toLowerCase();
+      const catId      = fila.dataset.categoriaId;
+      const estado     = fila.dataset.stockEstado;
+      const inactivo   = fila.dataset.activo === 'false';
+
+      const matchBusq  = !q || nombre.includes(q);
+      const matchCat   = !cat || catId === cat;
+      const matchFiltro =
+        filtroActivo === 'todos'      ? true :
+        filtroActivo === 'stock-bajo' ? (estado === 'stock-bajo') :
+        filtroActivo === 'agotados'   ? (estado === 'agotado') :
+        filtroActivo === 'inactivos'  ? inactivo : true;
+
+      const mostrar = matchBusq && matchCat && matchFiltro;
+      fila.style.display = mostrar ? '' : 'none';
+
+      if (mostrar) {
+        vis++;
+        if (estado === 'stock-bajo') stockBajoCount++;
+        if (estado === 'agotado')    agotadoCount++;
+      }
+    });
+
+    actualizarResumen(vis, stockBajoCount, agotadoCount);
+  }
+
+  function actualizarResumen(total, stockBajo, agotados) {
+    const bar = document.getElementById('resumen-bar');
+    bar.innerHTML = `
+      <span><strong>${total}</strong> producto${total !== 1 ? 's' : ''} mostrado${total !== 1 ? 's' : ''}</span>
+      ${stockBajo > 0 ? `<span class="advertencia"><i class="bi bi-exclamation-triangle-fill me-1"></i><strong>${stockBajo}</strong> con stock bajo</span>` : ''}
+      ${agotados  > 0 ? `<span class="alerta"><i class="bi bi-x-circle-fill me-1"></i><strong>${agotados}</strong> agotado${agotados !== 1 ? 's' : ''}</span>` : ''}
+    `;
+  }
+
+  // Inicializar resumen
+  aplicarFiltros();
+
+  // ── Modal de producto ─────────────────────────────────────
+  const modalProdEl  = document.getElementById('modalProducto');
+  const modalProd    = new bootstrap.Modal(modalProdEl);
+  const inputCosto   = document.getElementById('prod-costo');
+  const inputPrecio  = document.getElementById('prod-precio');
+
+  // Preview margen en tiempo real
+  [inputCosto, inputPrecio].forEach(el => el.addEventListener('input', actualizarPreviewMargen));
+
+  function actualizarPreviewMargen() {
+    const costo  = parseFloat(inputCosto.value) || 0;
+    const precio = parseFloat(inputPrecio.value) || 0;
+    const preview = document.getElementById('preview-margen');
+
+    if (precio > 0) {
+      preview.style.display = 'block';
+      const margen = costo > 0 ? ((precio - costo) / precio * 100).toFixed(1) : null;
+      document.getElementById('preview-margen-valor').textContent = margen ? `${margen}%` : '—';
+      document.getElementById('preview-precio-bs').textContent = TASA_INV
+        ? `Bs. ${(precio * TASA_INV).toFixed(2)}`
+        : '—';
+    } else {
+      preview.style.display = 'none';
+    }
+  }
+
+  // Preview de imagen
+  document.getElementById('prod-imagen').addEventListener('change', function () {
+    const file = this.files[0];
+    const prev = document.getElementById('preview-imagen');
+    if (file) {
+      prev.src = URL.createObjectURL(file);
+      prev.style.display = 'block';
+    } else {
+      prev.style.display = 'none';
+    }
+  });
+
+  function abrirModalNuevo() {
+    limpiarModal();
+    document.getElementById('modal-producto-titulo').innerHTML =
+      '<i class="bi bi-plus-circle me-2"></i>Nuevo producto';
+    document.getElementById('btn-eliminar-prod').style.display = 'none';
+    modalProd.show();
+  }
+
+  function abrirModalEditar(fila) {
+    limpiarModal();
+    document.getElementById('modal-producto-titulo').innerHTML =
+      '<i class="bi bi-pencil me-2"></i>Editar producto';
+
+    document.getElementById('prod-pk').value           = fila.dataset.id;
+    document.getElementById('prod-nombre').value       = fila.dataset.nombre;
+    document.getElementById('prod-categoria').value    = fila.dataset.categoriaId || '';
+    document.getElementById('prod-codigo').value       = fila.dataset.codigo;
+    document.getElementById('prod-costo').value        = fila.dataset.costo ? parseFloat(fila.dataset.costo).toFixed(2) : '';
+    document.getElementById('prod-precio').value       = parseFloat(fila.dataset.precio).toFixed(2);
+    document.getElementById('prod-stock').value        = fila.dataset.stock;
+    document.getElementById('prod-stock-min').value    = fila.dataset.stockMin;
+    document.getElementById('prod-activo').checked     = fila.dataset.activo === 'true';
+
+    if (fila.dataset.imagen) {
+      const prev = document.getElementById('preview-imagen');
+      prev.src   = fila.dataset.imagen;
+      prev.style.display = 'block';
+    }
+
+    actualizarPreviewMargen();
+    document.getElementById('btn-eliminar-prod').style.display = 'block';
+    modalProd.show();
+  }
+
+  function limpiarModal() {
+    document.getElementById('prod-pk').value        = '0';
+    document.getElementById('prod-nombre').value    = '';
+    document.getElementById('prod-categoria').value = '';
+    document.getElementById('prod-codigo').value    = '';
+    document.getElementById('prod-costo').value     = '';
+    document.getElementById('prod-precio').value    = '';
+    document.getElementById('prod-stock').value     = '0';
+    document.getElementById('prod-stock-min').value = '5';
+    document.getElementById('prod-activo').checked  = true;
+    document.getElementById('prod-imagen').value    = '';
+    document.getElementById('preview-imagen').style.display = 'none';
+    document.getElementById('preview-margen').style.display = 'none';
+    document.getElementById('prod-feedback').textContent    = '';
+  }
+
+  // ── Guardar producto ──────────────────────────────────────
+  document.getElementById('btn-guardar-prod').addEventListener('click', function () {
+    const feedback = document.getElementById('prod-feedback');
+    const nombre   = document.getElementById('prod-nombre').value.trim();
+    const precio   = document.getElementById('prod-precio').value;
+
+    if (!nombre) {
+      feedback.textContent = 'El nombre es obligatorio.';
+      document.getElementById('prod-nombre').focus();
+      return;
+    }
+    if (!precio || parseFloat(precio) <= 0) {
+      feedback.textContent = 'Ingresa un precio de venta válido.';
+      document.getElementById('prod-precio').focus();
+      return;
+    }
+
+    const form = new FormData();
+    form.append('pk',           document.getElementById('prod-pk').value);
+    form.append('nombre',       nombre);
+    form.append('categoria_id', document.getElementById('prod-categoria').value);
+    form.append('codigo_barras', document.getElementById('prod-codigo').value.trim());
+    form.append('costo_usd',    document.getElementById('prod-costo').value);
+    form.append('precio_usd',   precio);
+    form.append('stock_actual', document.getElementById('prod-stock').value);
+    form.append('stock_minimo', document.getElementById('prod-stock-min').value);
+    form.append('activo',       document.getElementById('prod-activo').checked ? 'true' : 'false');
+
+    const imgFile = document.getElementById('prod-imagen').files[0];
+    if (imgFile) form.append('imagen', imgFile);
+
+    this.disabled   = true;
+    this.innerHTML  = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+    feedback.textContent = '';
+
+    fetch(URL_GUARDAR, {
+      method:  'POST',
+      headers: { 'X-CSRFToken': CSRF_INV },
+      body:    form,
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          modalProd.hide();
+          location.reload();
+        } else {
+          feedback.textContent = data.error || 'Error al guardar.';
+        }
+      })
+      .catch(() => { feedback.textContent = 'Error de conexión.'; })
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar producto';
+      });
+  });
+
+  // ── Eliminar producto ─────────────────────────────────────
+  document.getElementById('btn-eliminar-prod').addEventListener('click', function () {
+    const nombre = document.getElementById('prod-nombre').value;
+    if (!confirm(`¿Eliminar "${nombre}"?\n\nSi tiene ventas registradas, será desactivado en lugar de eliminado.`)) return;
+
+    const pk = document.getElementById('prod-pk').value;
+    this.disabled = true;
+
+    fetch(`${URL_ELIMINAR}${pk}/`, {
+      method:  'POST',
+      headers: { 'X-CSRFToken': CSRF_INV },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          if (data.advertencia) alert(data.advertencia);
+          modalProd.hide();
+          location.reload();
+        } else {
+          document.getElementById('prod-feedback').textContent = data.error || 'Error al eliminar.';
+        }
+      })
+      .catch(() => { document.getElementById('prod-feedback').textContent = 'Error de conexión.'; })
+      .finally(() => { this.disabled = false; });
+  });
+
+  // Actualizar tasa si se cambia desde el navbar
+  window.onTasaActualizada = function(nuevaTasa) {
+    // Recargar para recalcular columna Bs.
+    location.reload();
+  };
+</script>
+{% endblock %}
