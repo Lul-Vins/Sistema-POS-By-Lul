@@ -137,6 +137,23 @@
               <span class="text-muted">$ {{ d.precio_usd_capturado|floatformat:2 }} c/u → <strong>$ {{ d.subtotal_usd|floatformat:2 }}</strong></span>
             </div>
             {% endfor %}
+            {% if venta.monto_recibido is not None %}
+            <div class="d-flex justify-content-between mt-2 pt-1" style="border-top:1px dashed #dee2e6;">
+              <span class="text-muted">
+                <i class="bi bi-cash me-1"></i>
+                Recibido{% if venta.metodo_pago == 'EFECTIVO_BS' %} (Bs.){% else %} (USD){% endif %}
+              </span>
+              <span class="fw-semibold">
+                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.monto_recibido|floatformat:2 }}{% else %}$ {{ venta.monto_recibido|floatformat:2 }}{% endif %}
+              </span>
+            </div>
+            <div class="d-flex justify-content-between">
+              <span class="text-muted"><i class="bi bi-arrow-return-left me-1"></i>Vuelto</span>
+              <span class="fw-bold text-success">
+                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.vuelto|floatformat:2 }}{% else %}$ {{ venta.vuelto|floatformat:2 }}{% endif %}
+              </span>
+            </div>
+            {% endif %}
             {% if venta.notas %}
             <div class="mt-1 text-muted fst-italic" style="font-size:.8rem;">
               <i class="bi bi-chat-left-text me-1"></i>{{ venta.notas }}

@@ -26,10 +26,12 @@ def venta(request):
 @require_POST
 def procesar_venta(request):
     try:
-        body        = json.loads(request.body)
-        carrito     = body.get('carrito', [])
-        metodo_pago = body.get('metodo_pago', '')
-        notas       = body.get('notas', '')
+        body           = json.loads(request.body)
+        carrito        = body.get('carrito', [])
+        metodo_pago    = body.get('metodo_pago', '')
+        notas          = body.get('notas', '')
+        monto_recibido = body.get('monto_recibido')  # None si no es efectivo
+        vuelto         = body.get('vuelto')
 
         if not carrito:
             return JsonResponse({'ok': False, 'error': 'El carrito está vacío.'}, status=400)
@@ -43,7 +45,7 @@ def procesar_venta(request):
             producto = get_object_or_404(Producto, pk=item['id'], activo=True)
             items.append({'producto': producto, 'cantidad': int(item['cantidad'])})
 
-        venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas)
+        venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas, monto_recibido, vuelto)
 
         return JsonResponse({
             'ok':      True,

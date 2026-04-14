@@ -26,6 +26,9 @@ class Venta(models.Model):
     metodo_pago = models.CharField(max_length=20, choices=METODO_PAGO)
     estado = models.CharField(max_length=15, choices=ESTADO, default='COMPLETADA')
     notas = models.TextField(blank=True)
+    # Solo para pagos en efectivo (USD o Bs según metodo_pago)
+    monto_recibido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    vuelto = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
 
     class Meta:
         verbose_name = 'Venta'
@@ -36,7 +39,7 @@ class Venta(models.Model):
         return f'Venta #{self.pk} — {self.fecha:%d/%m/%Y %H:%M}'
 
     @classmethod
-    def crear_desde_carrito(cls, carrito, metodo_pago, notas=''):
+    def crear_desde_carrito(cls, carrito, metodo_pago, notas='', monto_recibido=None, vuelto=None):
         """
         Procesa el carrito completo en una transacción atómica.
 
@@ -75,6 +78,8 @@ class Venta(models.Model):
                 tasa_aplicada=tasa,
                 metodo_pago=metodo_pago,
                 notas=notas,
+                monto_recibido=monto_recibido,
+                vuelto=vuelto,
             )
 
             # Registrar detalles y descontar inventario

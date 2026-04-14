@@ -803,10 +803,54 @@
       return;
     }
 
+    // Validación de monto recibido para pagos en efectivo
+    if (['EFECTIVO_USD', 'EFECTIVO_BS'].includes(metodo)) {
+      const totalUsd  = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+      const recibido  = parseFloat(inputRecibido.value) || 0;
+
+      if (!inputRecibido.value.trim()) {
+        feedback.textContent = 'Ingresa el monto recibido.';
+        inputRecibido.focus();
+        return;
+      }
+
+      if (metodo === 'EFECTIVO_USD' && recibido < totalUsd) {
+        feedback.textContent = `Monto insuficiente. Faltan $ ${(totalUsd - recibido).toFixed(2)}.`;
+        inputRecibido.focus();
+        return;
+      }
+
+      if (metodo === 'EFECTIVO_BS') {
+        const totalBs = totalUsd * TASA;
+        if (recibido < totalBs) {
+          feedback.textContent = `Monto insuficiente. Faltan Bs. ${formatBs(totalBs - recibido)}.`;
+          inputRecibido.focus();
+          return;
+        }
+      }
+    }
+
+    const esEfectivo = ['EFECTIVO_USD', 'EFECTIVO_BS'].includes(metodo);
+    const recibidoVal = esEfectivo ? (parseFloat(inputRecibido.value) || 0) : null;
+
+    // Calcular vuelto para guardarlo en la BD
+    let vueltoVal = null;
+    if (esEfectivo) {
+      const totalUsdNum = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+      if (metodo === 'EFECTIVO_BS') {
+        vueltoVal = recibidoVal - (totalUsdNum * TASA);
+      } else {
+        vueltoVal = recibidoVal - totalUsdNum;
+      }
+      vueltoVal = Math.max(parseFloat(vueltoVal.toFixed(2)), 0);
+    }
+
     const payload = {
-      carrito:     Object.entries(carrito).map(([id, item]) => ({ id, cantidad: item.cantidad })),
-      metodo_pago: metodo,
-      notas:       document.getElementById('cobro-notas').value.trim(),
+      carrito:        Object.entries(carrito).map(([id, item]) => ({ id, cantidad: item.cantidad })),
+      metodo_pago:    metodo,
+      notas:          document.getElementById('cobro-notas').value.trim(),
+      monto_recibido: recibidoVal,
+      vuelto:         vueltoVal,
     };
 
     this.disabled    = true;
