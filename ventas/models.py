@@ -11,6 +11,8 @@ class Venta(models.Model):
         ('EFECTIVO_BS',  'Efectivo Bs'),
         ('TRANSFERENCIA', 'Transferencia'),
         ('PAGO_MOVIL',   'Pago Móvil'),
+        ('PUNTO_DE_VENTA', 'PdV (Tarjeta)'),
+        ('BIOPAGO',      'Biopago'),
         ('MIXTO',        'Pago Mixto'),
     ]
 
