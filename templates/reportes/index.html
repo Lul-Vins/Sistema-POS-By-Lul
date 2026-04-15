@@ -48,13 +48,18 @@
 <div class="d-flex align-items-center justify-content-between mb-3">
   <h4 class="fw-bold mb-0"><i class="bi bi-bar-chart-line me-2 text-muted"></i>Reportes de Ventas</h4>
 
-  <!-- Filtro de fecha -->
-  <form method="get" class="d-flex align-items-center gap-2">
-    <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}"
-           class="form-control form-control-sm filtro-fecha"
-           onchange="this.form.submit()">
-    <a href="?" class="btn btn-sm btn-outline-secondary">Hoy</a>
-  </form>
+  <!-- Botón Cierre + Filtro -->
+  <div class="d-flex align-items-center gap-2">
+    <a href="{% url 'reportes:cierre_caja' %}" class="btn btn-sm btn-warning">
+      <i class="bi bi-cash-coin me-1"></i>Cierre de caja
+    </a>
+    <form method="get" class="d-flex align-items-center gap-2">
+      <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}"
+             class="form-control form-control-sm filtro-fecha"
+             onchange="this.form.submit()">
+      <a href="?" class="btn btn-sm btn-outline-secondary">Hoy</a>
+    </form>
+  </div>
 </div>
 
 <!-- ── Tarjetas resumen ──────────────────────────────────────── -->
@@ -102,7 +107,7 @@
     <tbody>
       {% for venta in ventas %}
       <!-- Fila principal -->
-      <tr onclick="toggleDetalle({{ venta.id }})" id="fila-{{ venta.id }}">
+      <tr class="fila-venta" data-id="{{ venta.id }}" onclick="toggleDetalle(this.dataset.id)">
         <td class="text-center text-muted">
           <i class="bi bi-chevron-right" id="chevron-{{ venta.id }}"></i>
         </td>
@@ -119,8 +124,8 @@
         </td>
         <td onclick="event.stopPropagation()">
           {% if venta.estado == 'COMPLETADA' %}
-          <button class="btn-anular" id="btn-anular-{{ venta.id }}"
-                  onclick="anularVenta({{ venta.id }})">
+          <button class="btn-anular" data-venta-id="{{ venta.id }}"
+                  onclick="anularVenta(this.dataset.ventaId)">
             Anular
           </button>
           {% endif %}
@@ -189,14 +194,14 @@
     chevron.className  = visible ? 'bi bi-chevron-right' : 'bi bi-chevron-down text-success';
   }
 
-  function anularVenta(id) {
-    if (!confirm(`¿Anular la venta #${id}? El stock de los productos será devuelto.`)) return;
+  function anularVenta(ventaId) {
+    if (!confirm(`¿Anular la venta #${ventaId}? El stock de los productos será devuelto.`)) return;
 
-    const btn = document.getElementById(`btn-anular-${id}`);
+    const btn = document.querySelector(`[data-venta-id="${ventaId}"]`);
     btn.disabled     = true;
     btn.textContent  = '...';
 
-    fetch(`/reportes/anular/${id}/`, {
+    fetch(`/reportes/anular/${ventaId}/`, {
       method:  'POST',
       headers: { 'X-CSRFToken': CSRF_REPORTES },
     })
