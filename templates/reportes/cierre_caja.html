@@ -10,7 +10,6 @@
     border-radius: 12px;
     padding: 2rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.07);
-    max-width: 600px;
     margin: 0 auto;
   }
 
@@ -22,100 +21,115 @@
     text-align: center;
   }
 
-  .fila-monto {
+  .metodo-contenedor {
+    background: #f8f9fa;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-left: 4px solid #dee2e6;
+  }
+
+  .metodo-header {
     display: flex;
     justify-content: space-between;
-    align-items: baseline;
-    padding: 0.75rem 0;
-    border-bottom: 1px solid #f0f0f0;
-    font-size: 0.95rem;
-  }
-
-  .fila-monto .label { color: #6c757d; font-weight: 600; }
-  .fila-monto .valor { font-size: 1.2rem; font-weight: 700; color: #1a1a2e; }
-  .fila-monto.esperado .valor { color: #2d6a4f; }
-  .fila-monto.real .valor { color: #0c63e4; }
-  .fila-monto.diferencia .valor {
-    font-size: 1.3rem;
-  }
-  .fila-monto.diferencia.positivo .valor { color: #065f46; }
-  .fila-monto.diferencia.negativo .valor { color: #dc3545; }
-
-  .seccion {
-    margin-bottom: 1.5rem;
-  }
-
-  .seccion-titulo {
-    font-size: .85rem;
-    font-weight: 700;
-    color: #6c757d;
-    text-transform: uppercase;
-    letter-spacing: .5px;
-    margin-bottom: 0.75rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 2px solid #dee2e6;
-  }
-
-  .input-monto {
-    font-size: 1.3rem;
-    font-weight: 700;
-    text-align: center;
-    padding: 0.75rem;
-    border: 2px solid #dee2e6;
-    border-radius: 10px;
-  }
-
-  .input-monto:focus {
-    border-color: #2d6a4f;
-    box-shadow: 0 0 0 3px rgba(45,106,79,0.15);
-  }
-
-  .input-moneda {
-    display: flex;
     align-items: center;
-    gap: 0.5rem;
-    margin-bottom: 1rem;
+    cursor: pointer;
+    user-select: none;
   }
 
-  .input-moneda label {
-    font-weight: 600;
+  .metodo-nombre {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+  }
+
+  .metodo-total {
+    font-size: 1.3rem;
+    font-weight: 800;
+    color: #2d6a4f;
+  }
+
+  .metodo-cantidad {
+    font-size: 0.9rem;
     color: #6c757d;
-    min-width: 100px;
-    margin-bottom: 0;
+    margin-left: 1rem;
   }
 
-  .input-moneda input {
-    flex: 1;
+  .metodo-efectivo-usd { border-left-color: #2d6a4f; }
+  .metodo-efectivo-usd .metodo-total { color: #2d6a4f; }
+
+  .metodo-efectivo-bs { border-left-color: #40916c; }
+  .metodo-efectivo-bs .metodo-total { color: #40916c; }
+
+  .metodo-digital { border-left-color: #0c63e4; }
+  .metodo-digital .metodo-total { color: #0c63e4; }
+
+  /* Acordeón de transacciones */
+  .accordion-button {
+    background: transparent;
+    font-weight: 600;
+    color: #1a1a2e;
+    padding: 0.75rem 0;
+    border: none;
+    box-shadow: none !important;
+  }
+
+  .accordion-button:not(.collapsed) {
+    background: transparent;
+    color: #2d6a4f;
+  }
+
+  .accordion-button::after {
+    opacity: 0.5;
+  }
+
+  .accordion-body {
+    padding: 1rem 0;
+  }
+
+  .transaccion-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.75rem;
+    background: #fff;
+    border-radius: 6px;
+    margin-bottom: 0.5rem;
+    border-left: 3px solid #dee2e6;
+  }
+
+  .transaccion-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+  }
+
+  .transaccion-hora {
+    font-size: 0.8rem;
+    color: #6c757d;
+  }
+
+  .transaccion-productos {
+    font-size: 0.85rem;
+    color: #495057;
+    max-width: 300px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .transaccion-total {
+    font-weight: 700;
+    font-size: 1rem;
+    color: #1a1a2e;
   }
 
   .cierre-feedback {
-    font-size: .85rem;
+    font-size: 0.85rem;
     min-height: 1.2rem;
     margin-top: 1rem;
     text-align: center;
   }
-
-  .tabla-historico {
-    width: 100%;
-    font-size: .9rem;
-    margin-top: 2rem;
-  }
-
-  .tabla-historico thead th {
-    background: #1a1a2e;
-    color: #fff;
-    font-weight: 600;
-    padding: 0.75rem;
-    text-align: left;
-    border: none;
-  }
-
-  .tabla-historico tbody td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
-  }
-
-  .tabla-historico tbody tr:hover { background: #f8f9fa; }
 
   .btn-cierre {
     width: 100%;
@@ -139,29 +153,38 @@
     cursor: not-allowed;
   }
 
-  .alerta-diferencia {
-    padding: 1rem;
-    border-radius: 8px;
-    margin-top: 1rem;
-    font-size: .9rem;
+  .tabla-historico {
+    width: 100%;
+    font-size: 0.9rem;
+    margin-top: 2rem;
   }
 
-  .alerta-diferencia.positivo {
-    background: #d1fae5;
-    color: #065f46;
-    border-left: 4px solid #065f46;
+  .tabla-historico thead th {
+    background: #1a1a2e;
+    color: #fff;
+    font-weight: 600;
+    padding: 0.75rem;
+    text-align: left;
+    border: none;
   }
 
-  .alerta-diferencia.negativo {
-    background: #fee2e2;
-    color: #991b1b;
-    border-left: 4px solid #dc3545;
+  .tabla-historico tbody td {
+    padding: 0.75rem;
+    border-bottom: 1px solid #f0f0f0;
   }
 
-  .alerta-diferencia.cero {
-    background: #dbeafe;
-    color: #0c63e4;
-    border-left: 4px solid #0c63e4;
+  .tabla-historico tbody tr:hover {
+    background: #f8f9fa;
+  }
+
+  .badge-metodo {
+    display: inline-block;
+    padding: 0.25rem 0.75rem;
+    border-radius: 12px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: #e9ecef;
+    color: #495057;
   }
 </style>
 {% endblock %}
@@ -182,72 +205,83 @@
     <input type="date" name="fecha" value="{{ fecha|date:'Y-m-d' }}"
            class="form-control form-control-sm" style="width: auto; max-width: 180px;"
            onchange="this.form.submit()">
-    <a href="?fecha={{ today|date:'Y-m-d' }}" class="btn btn-sm btn-outline-secondary">Hoy</a>
+    <a href="{% url 'reportes:cierre_caja' %}" class="btn btn-sm btn-outline-secondary">Hoy</a>
   </form>
 </div>
 
-<!-- ── Formulario de cierre ──────────────────────────────────── -->
-<div class="cierre-card">
+<!-- ── Resumen por método de pago ──────────────────────────────────── -->
+<div class="cierre-card" style="max-width: 700px;">
   <div class="cierre-titulo">
     <i class="bi bi-calendar me-2"></i>{{ fecha.day }} de {{ fecha|date:"F" }} de {{ fecha.year }}
   </div>
 
-  <!-- Resumen de lo esperado -->
-  <div class="seccion">
-    <div class="seccion-titulo">Lo esperado en caja (ventas de hoy en efectivo)</div>
+  {% for metodo in resumen_metodos_lista %}
+    {% if metodo.cantidad > 0 %}
+    <div class="metodo-contenedor {% if metodo.codigo == 'EFECTIVO_USD' %}metodo-efectivo-usd{% elif metodo.codigo == 'EFECTIVO_BS' %}metodo-efectivo-bs{% else %}metodo-digital{% endif %}">
+      <div class="metodo-header">
+        <div>
+          <span class="metodo-nombre">{{ metodo.nombre }}</span>
+          <span class="metodo-cantidad">({{ metodo.cantidad }} transacción{% if metodo.cantidad != 1 %}es{% endif %})</span>
+        </div>
+        <div style="text-align: right;">
+          {% if metodo.codigo == 'EFECTIVO_BS' %}
+            <span class="metodo-total">Bs. {{ metodo.total_bs|floatformat:2 }}</span>
+          {% else %}
+            <span class="metodo-total">$ {{ metodo.total_usd|floatformat:2 }}</span>
+            <div style="font-size: .8rem; color: #6c757d; margin-top: 2px;">Bs. {{ metodo.total_bs|floatformat:2 }}</div>
+          {% endif %}
+        </div>
+      </div>
 
-    <div class="fila-monto esperado">
-      <span class="label">Efectivo USD</span>
-      <span class="valor" id="display-usd-esperado">$ {{ efectivo_usd_esperado|floatformat:2 }}</span>
+      <div class="accordion mt-2" id="accordion-{{ metodo.codigo|lower }}">
+        <div class="accordion-item border-0 bg-transparent">
+          <h2 class="accordion-header">
+            <button class="accordion-button collapsed" type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapse-{{ metodo.codigo|lower }}">
+              <i class="bi bi-receipt me-2"></i>Ver transacciones
+            </button>
+          </h2>
+          <div id="collapse-{{ metodo.codigo|lower }}" class="accordion-collapse collapse">
+            <div class="accordion-body">
+              {% for venta in metodo.ventas %}
+              <div class="transaccion-item">
+                <div class="transaccion-info">
+                  <span class="transaccion-hora">#{{ venta.pk }} &nbsp;{{ venta.fecha|date:"H:i" }}</span>
+                  <span class="transaccion-productos">
+                    {% for d in venta.detalles.all %}{{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                  </span>
+                </div>
+                <div style="text-align: right; flex-shrink: 0;">
+                  {% if metodo.codigo == 'EFECTIVO_BS' %}
+                    <span class="transaccion-total">Bs. {{ venta.total_bs|floatformat:2 }}</span>
+                  {% else %}
+                    <span class="transaccion-total">$ {{ venta.total_usd|floatformat:2 }}</span>
+                    <div style="font-size: .78rem; color: #6c757d; margin-top: 1px;">Bs. {{ venta.total_bs|floatformat:2 }}</div>
+                  {% endif %}
+                </div>
+              </div>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
+    {% endif %}
+  {% empty %}
+    <p class="text-center text-muted py-4">No hay ventas registradas para este día.</p>
+  {% endfor %}
 
-    <div class="fila-monto esperado">
-      <span class="label">Efectivo Bs.</span>
-      <span class="valor" id="display-bs-esperado">Bs. {{ efectivo_bs_esperado|floatformat:2 }}</span>
-    </div>
+  <!-- Notas -->
+  <div style="margin-top: 1.5rem;">
+    <label class="form-label" style="font-size: .9rem; font-weight: 600;">Notas (opcional)</label>
+    <textarea id="cierre-notas" class="form-control" rows="2"
+              placeholder="Ej: novedades del día, incidencias, etc."
+              style="font-size: .85rem; resize: none;"></textarea>
   </div>
 
-  <!-- Ingreso de lo real -->
-  <div class="seccion">
-    <div class="seccion-titulo">Lo que realmente tiene el cajero</div>
-
-    <div class="input-moneda">
-      <label for="cierre-usd">Efectivo USD:</label>
-      <input type="number" id="cierre-usd" class="form-control input-monto" placeholder="0.00" min="0" step="0.01">
-    </div>
-
-    <div class="input-moneda">
-      <label for="cierre-bs">Efectivo Bs.:</label>
-      <input type="number" id="cierre-bs" class="form-control input-monto" placeholder="0.00" min="0" step="0.01">
-    </div>
-
-    <label class="form-label" style="font-size: .9rem; margin-top: 1rem;">Notas (opcional)</label>
-    <textarea id="cierre-notas" class="form-control" rows="2" placeholder="Ej: Faltó cambio, vuelto redondeado, etc." style="font-size: .85rem; resize: none;"></textarea>
-  </div>
-
-  <!-- Diferencia en tiempo real -->
-  <div class="seccion">
-    <div class="seccion-titulo">Diferencia</div>
-
-    <div class="fila-monto diferencia" id="fila-dif-usd">
-      <span class="label">USD</span>
-      <span class="valor" id="valor-dif-usd">$ 0.00</span>
-    </div>
-
-    <div class="fila-monto diferencia" id="fila-dif-bs">
-      <span class="label">Bs.</span>
-      <span class="valor" id="valor-dif-bs">Bs. 0.00</span>
-    </div>
-
-    <div id="alerta-dif" class="alerta-diferencia cero" style="display: none;">
-      <i class="bi me-1"></i><span id="texto-alerta"></span>
-    </div>
-  </div>
-
-  <!-- Feedback -->
   <div id="cierre-feedback" class="cierre-feedback text-danger"></div>
 
-  <!-- Botón cierre -->
   <button class="btn-cierre" id="btn-guardar-cierre">
     <i class="bi bi-check-lg me-1"></i>Registrar cierre
   </button>
@@ -262,28 +296,26 @@
       <thead>
         <tr>
           <th>Fecha</th>
-          <th>USD Esperado</th>
-          <th>USD Real</th>
-          <th>Diferencia USD</th>
-          <th>Bs. Esperado</th>
-          <th>Bs. Real</th>
-          <th>Diferencia Bs.</th>
+          <th>Ef. USD</th>
+          <th>Ef. Bs</th>
+          <th>PdV</th>
+          <th>Biopago</th>
+          <th>Transferencia</th>
+          <th>Pago Móvil</th>
+          <th>Mixto</th>
         </tr>
       </thead>
       <tbody>
         {% for c in historico %}
         <tr>
           <td>{{ c.fecha|date:"d/m/Y" }}</td>
-          <td>${{ c.efectivo_usd_esperado|floatformat:2 }}</td>
-          <td>${{ c.efectivo_usd_real|floatformat:2 }}</td>
-          <td style="color: {% if c.diferencia_usd >= 0 %}#065f46{% else %}#dc3545{% endif %}; font-weight: 700;">
-            {% if c.diferencia_usd >= 0 %}+{% endif %}$ {{ c.diferencia_usd|floatformat:2 }}
-          </td>
+          <td>$ {{ c.efectivo_usd_esperado|floatformat:2 }}</td>
           <td>Bs. {{ c.efectivo_bs_esperado|floatformat:2 }}</td>
-          <td>Bs. {{ c.efectivo_bs_real|floatformat:2 }}</td>
-          <td style="color: {% if c.diferencia_bs >= 0 %}#065f46{% else %}#dc3545{% endif %}; font-weight: 700;">
-            {% if c.diferencia_bs >= 0 %}+{% endif %}Bs. {{ c.diferencia_bs|floatformat:2 }}
-          </td>
+          <td>$ {{ c.punto_de_venta_total|floatformat:2 }}</td>
+          <td>$ {{ c.biopago_total|floatformat:2 }}</td>
+          <td>$ {{ c.transferencia_total|floatformat:2 }}</td>
+          <td>$ {{ c.pago_movil_total|floatformat:2 }}</td>
+          <td>$ {{ c.mixto_total|floatformat:2 }}</td>
         </tr>
         {% endfor %}
       </tbody>
@@ -297,121 +329,32 @@
 
 {% block scripts_extra %}
 <script>
-  window.URL_GUARDAR = "{% url 'reportes:guardar_cierre' %}";
-  window.CSRF_TOKEN = "{{ csrf_token }}";
-
-  // Valores esperados pasados desde Django, parseados como números
-  var displayUsdEsperado = parseFloat("{{ efectivo_usd_esperado|default:0 }}") || 0;
-  var displayBsEsperado = parseFloat("{{ efectivo_bs_esperado|default:0 }}") || 0;
-
-  var inputUsdReal = document.getElementById('cierre-usd');
-  var inputBsReal = document.getElementById('cierre-bs');
-  var fechaInput = document.querySelector('input[name="fecha"]');
-
-  // Calcular diferencia en tiempo real
-  function actualizarDiferencia() {
-    const usdReal = parseFloat(inputUsdReal.value) || 0;
-    const bsReal = parseFloat(inputBsReal.value) || 0;
-
-    const difUsd = usdReal - displayUsdEsperado;
-    const difBs = bsReal - displayBsEsperado;
-
-    // Mostrar diferencias
-    document.getElementById('valor-dif-usd').textContent = `$ ${difUsd.toFixed(2)}`;
-    document.getElementById('valor-dif-bs').textContent = `Bs. ${difBs.toFixed(2)}`;
-
-    // Colorear filas
-    const filaDifUsd = document.getElementById('fila-dif-usd');
-    const filaDifBs = document.getElementById('fila-dif-bs');
-    filaDifUsd.className = `fila-monto diferencia ${difUsd > 0.01 ? 'positivo' : difUsd < -0.01 ? 'negativo' : 'cero'}`;
-    filaDifBs.className = `fila-monto diferencia ${difBs > 0.01 ? 'positivo' : difBs < -0.01 ? 'negativo' : 'cero'}`;
-
-    // Mostrar alerta
-    const alertaDiv = document.getElementById('alerta-dif');
-    const hayDiferencia = Math.abs(difUsd) > 0.01 || Math.abs(difBs) > 0.01;
-
-    if (!hayDiferencia) {
-      alertaDiv.style.display = 'block';
-      alertaDiv.className = 'alerta-diferencia cero';
-      document.getElementById('texto-alerta').textContent = '✓ Cuadra perfecto';
-    } else if (difUsd > 0 || difBs > 0) {
-      alertaDiv.style.display = 'block';
-      alertaDiv.className = 'alerta-diferencia positivo';
-      document.getElementById('texto-alerta').innerHTML = '<i class="bi bi-arrow-up"></i> Sobra dinero en caja';
-    } else {
-      alertaDiv.style.display = 'block';
-      alertaDiv.className = 'alerta-diferencia negativo';
-      document.getElementById('texto-alerta').innerHTML = '<i class="bi bi-arrow-down"></i> Falta dinero en caja';
-    }
-  }
-
-  inputUsdReal.addEventListener('input', actualizarDiferencia);
-  inputBsReal.addEventListener('input', actualizarDiferencia);
-
-  // Guardar cierre
-  var btnGuardarCierre = document.getElementById('btn-guardar-cierre');
-  if (!btnGuardarCierre) {
-    console.error('❌ Botón guardar cierre no encontrado');
-  } else {
-    console.log('✓ Botón encontrado, registrando evento');
-  }
-
-  btnGuardarCierre && btnGuardarCierre.addEventListener('click', function () {
+  document.getElementById('btn-guardar-cierre').addEventListener('click', function () {
     const feedback = document.getElementById('cierre-feedback');
-    console.log('🔵 Click en botón guardar cierre');
-    console.log('inputUsdReal:', inputUsdReal, 'value:', inputUsdReal ? inputUsdReal.value : 'null');
-    console.log('inputBsReal:', inputBsReal, 'value:', inputBsReal ? inputBsReal.value : 'null');
-
-    if (!inputUsdReal || !inputBsReal) {
-      console.error('❌ Inputs no encontrados');
-      feedback.textContent = 'Error: Inputs no encontrados en la página';
-      feedback.className = 'cierre-feedback text-danger';
-      return;
-    }
-
-    const usdReal = parseFloat(inputUsdReal.value);
-    const bsReal = parseFloat(inputBsReal.value);
     const notas = document.getElementById('cierre-notas').value.trim();
-    const fecha = fechaInput.value;
-
-    console.log('Valores:', { usdReal, bsReal, fecha });
-
-    if (isNaN(usdReal) || isNaN(bsReal)) {
-      feedback.textContent = 'Ingresa los montos en USD y Bs.';
-      feedback.className = 'cierre-feedback text-danger';
-      console.warn('⚠️ Campos vacíos: USD isNaN:', isNaN(usdReal), 'BS isNaN:', isNaN(bsReal));
-      return;
-    }
+    const fecha = document.querySelector('input[name="fecha"]').value;
 
     this.disabled = true;
     this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Registrando...';
     feedback.textContent = '';
 
-    console.log('📤 Enviando fetch a:', window.URL_GUARDAR);
-
-    fetch(window.URL_GUARDAR, {
+    fetch("{% url 'reportes:guardar_cierre' %}", {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': window.CSRF_TOKEN },
-      body: JSON.stringify({ fecha, efectivo_usd_real: usdReal, efectivo_bs_real: bsReal, notas }),
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': '{{ csrf_token }}' },
+      body: JSON.stringify({ fecha, notas }),
     })
-      .then(r => {
-        console.log('📥 Respuesta recibida, status:', r.status);
-        return r.json();
-      })
+      .then(r => r.json())
       .then(data => {
-        console.log('✓ JSON parseado:', data);
         if (data.ok) {
-          feedback.textContent = `✓ Cierre ${data.accion} correctamente.`;
+          feedback.textContent = `Cierre ${data.accion} correctamente.`;
           feedback.className = 'cierre-feedback text-success';
           setTimeout(() => location.reload(), 1500);
         } else {
           feedback.textContent = data.error || 'Error al guardar.';
           feedback.className = 'cierre-feedback text-danger';
-          console.error('❌ Error del servidor:', data.error);
         }
       })
-      .catch((err) => {
-        console.error('❌ Error de fetch:', err);
+      .catch(err => {
         feedback.textContent = 'Error de conexión: ' + err.message;
         feedback.className = 'cierre-feedback text-danger';
       })
@@ -420,8 +363,5 @@
         this.innerHTML = '<i class="bi bi-check-lg me-1"></i>Registrar cierre';
       });
   });
-
-  // Inicializar diferencia
-  actualizarDiferencia();
 </script>
 {% endblock %}

@@ -2,22 +2,25 @@ from django.db import models
 
 
 class CierreCaja(models.Model):
-    """Registro de cierre de caja diario."""
+    """Registro de cierre de caja diario con desglose por método de pago."""
 
     fecha_cierre = models.DateTimeField(auto_now_add=True)
     fecha = models.DateField()  # Día del que se cierra
 
-    # Efectivo esperado (calculado de ventas del día)
+    # ── Efectivo ──
     efectivo_usd_esperado = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     efectivo_bs_esperado = models.DecimalField(max_digits=14, decimal_places=2, default=0)
-
-    # Efectivo real (ingresado por cajero)
     efectivo_usd_real = models.DecimalField(max_digits=10, decimal_places=2)
     efectivo_bs_real = models.DecimalField(max_digits=14, decimal_places=2)
-
-    # Diferencias calculadas automáticamente
     diferencia_usd = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     diferencia_bs = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    # ── Métodos digitales (totales esperados del día) ──
+    punto_de_venta_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    biopago_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    transferencia_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    pago_movil_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    mixto_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
     # Notas opcionales
     notas = models.TextField(blank=True)

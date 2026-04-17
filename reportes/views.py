@@ -64,26 +64,37 @@ def anular_venta(request, pk):
 
 
 def cierre_caja(request):
-    """Obtiene totales esperados del día para el cierre de caja."""
+    """Obtiene totales por método de pago del día para el cierre de caja."""
     fecha_str = request.GET.get('fecha', '')
     try:
         fecha = date.fromisoformat(fecha_str)
     except ValueError:
-        fecha = timezone.localdate()
+        fecha = timezone.localtime().date()
 
-    # Calcular efectivo esperado (solo COMPLETADAS)
-    ventas_efectivo = Venta.objects.filter(
+    # Obtener todas las ventas completadas del día
+    ventas_dia = Venta.objects.filter(
         fecha__date=fecha,
-        estado='COMPLETADA',
-        metodo_pago__in=['EFECTIVO_USD', 'EFECTIVO_BS']
-    )
+        estado='COMPLETADA'
+    ).prefetch_related('detalles__producto').order_by('-fecha')
 
-    efectivo_usd_esperado = sum(
-        float(v.total_usd) for v in ventas_efectivo if v.metodo_pago == 'EFECTIVO_USD'
-    )
-    efectivo_bs_esperado = sum(
-        float(v.total_bs) for v in ventas_efectivo if v.metodo_pago == 'EFECTIVO_BS'
-    )
+    # Agrupar por método de pago y calcular totales
+    resumen_metodos = {}
+    for codigo_metodo, nombre_metodo in Venta.METODO_PAGO:
+        ventas_metodo = ventas_dia.filter(metodo_pago=codigo_metodo)
+        total_usd = sum(float(v.total_usd) for v in ventas_metodo)
+        total_bs = sum(float(v.total_bs) for v in ventas_metodo)
+
+        resumen_metodos[codigo_metodo] = {
+            'nombre': nombre_metodo,
+            'codigo': codigo_metodo,
+            'total_usd': total_usd,
+            'total_bs': total_bs,
+            'cantidad': ventas_metodo.count(),
+            'ventas': list(ventas_metodo),
+        }
+
+    # Crear lista de métodos con datos (para iterar en template)
+    resumen_metodos_lista = list(resumen_metodos.values())
 
     # Verificar si ya existe cierre para este día
     cierre_existente = CierreCaja.objects.filter(fecha=fecha).first()
@@ -96,8 +107,8 @@ def cierre_caja(request):
 
     return render(request, 'reportes/cierre_caja.html', {
         'fecha': fecha,
-        'efectivo_usd_esperado': efectivo_usd_esperado,
-        'efectivo_bs_esperado': efectivo_bs_esperado,
+        'resumen_metodos': resumen_metodos,
+        'resumen_metodos_lista': resumen_metodos_lista,
         'cierre_existente': cierre_existente,
         'historico': historico,
         'moneda': moneda,
@@ -108,44 +119,39 @@ def cierre_caja(request):
 
 @require_POST
 def guardar_cierre(request):
-    """Guarda un cierre de caja."""
+    """Guarda un cierre de caja con desglose por método de pago."""
     try:
         data = json.loads(request.body)
         fecha_str = data.get('fecha', '')
         fecha = date.fromisoformat(fecha_str)
-
-        efectivo_usd_real = float(data.get('efectivo_usd_real', 0))
-        efectivo_bs_real = float(data.get('efectivo_bs_real', 0))
         notas = data.get('notas', '').strip()
 
-        # Calcular esperado
-        ventas_efectivo = Venta.objects.filter(
-            fecha__date=fecha,
-            estado='COMPLETADA',
-            metodo_pago__in=['EFECTIVO_USD', 'EFECTIVO_BS']
-        )
+        ventas_dia = Venta.objects.filter(fecha__date=fecha, estado='COMPLETADA')
 
-        efectivo_usd_esperado = sum(
-            float(v.total_usd) for v in ventas_efectivo if v.metodo_pago == 'EFECTIVO_USD'
-        )
-        efectivo_bs_esperado = sum(
-            float(v.total_bs) for v in ventas_efectivo if v.metodo_pago == 'EFECTIVO_BS'
-        )
+        totales_usd = {}
+        totales_bs = {}
+        for codigo_metodo, _ in Venta.METODO_PAGO:
+            qs = ventas_dia.filter(metodo_pago=codigo_metodo)
+            totales_usd[codigo_metodo] = sum(float(v.total_usd) for v in qs)
+            totales_bs[codigo_metodo] = sum(float(v.total_bs) for v in qs)
 
-        # Calcular diferencias
-        diferencia_usd = efectivo_usd_real - efectivo_usd_esperado
-        diferencia_bs = efectivo_bs_real - efectivo_bs_esperado
+        efectivo_usd = totales_usd.get('EFECTIVO_USD', 0)
+        efectivo_bs = totales_bs.get('EFECTIVO_BS', 0)
 
-        # Crear o actualizar cierre
         cierre, created = CierreCaja.objects.update_or_create(
             fecha=fecha,
             defaults={
-                'efectivo_usd_esperado': efectivo_usd_esperado,
-                'efectivo_bs_esperado': efectivo_bs_esperado,
-                'efectivo_usd_real': efectivo_usd_real,
-                'efectivo_bs_real': efectivo_bs_real,
-                'diferencia_usd': diferencia_usd,
-                'diferencia_bs': diferencia_bs,
+                'efectivo_usd_esperado': efectivo_usd,
+                'efectivo_bs_esperado': efectivo_bs,
+                'efectivo_usd_real': efectivo_usd,
+                'efectivo_bs_real': efectivo_bs,
+                'diferencia_usd': 0,
+                'diferencia_bs': 0,
+                'punto_de_venta_total': totales_usd.get('PUNTO_DE_VENTA', 0),
+                'biopago_total': totales_usd.get('BIOPAGO', 0),
+                'transferencia_total': totales_usd.get('TRANSFERENCIA', 0),
+                'pago_movil_total': totales_usd.get('PAGO_MOVIL', 0),
+                'mixto_total': totales_usd.get('MIXTO', 0),
                 'notas': notas,
             }
         )
