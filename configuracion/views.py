@@ -1,8 +1,61 @@
+from django.shortcuts import render, redirect
+from django.contrib import messages
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
 import json
-from .models import Moneda
+from .models import Empresa, Moneda
+
+
+def configuracion_index(request):
+    empresa = Empresa.objects.first()
+    moneda = Moneda.objects.first()
+
+    if request.method == 'POST':
+        nombre = request.POST.get('nombre', '').strip()
+        rif = 'J' + request.POST.get('rif', '').strip()
+        telefono = request.POST.get('telefono', '').strip()
+        direccion = request.POST.get('direccion', '').strip()
+        limpiar_logo = request.POST.get('limpiar_logo') == '1'
+
+        if not nombre or not rif:
+            messages.error(request, 'El nombre y el RIF son obligatorios.')
+            return render(request, 'configuracion/index.html', {
+                'empresa': empresa,
+                'moneda': moneda,
+                'tasa': moneda.tasa_cambio if moneda else None,
+                'post_data': request.POST,
+            })
+
+        if empresa:
+            empresa.nombre = nombre
+            empresa.rif = rif
+            empresa.telefono = telefono
+            empresa.direccion = direccion
+
+            if limpiar_logo and empresa.logo:
+                empresa.logo.delete(save=False)
+                empresa.logo = None
+            elif 'logo' in request.FILES:
+                if empresa.logo:
+                    empresa.logo.delete(save=False)
+                empresa.logo = request.FILES['logo']
+
+            empresa.save()
+        else:
+            empresa = Empresa(nombre=nombre, rif=rif, telefono=telefono, direccion=direccion)
+            if 'logo' in request.FILES:
+                empresa.logo = request.FILES['logo']
+            empresa.save()
+
+        messages.success(request, 'Configuración guardada correctamente.')
+        return redirect('configuracion:index')
+
+    return render(request, 'configuracion/index.html', {
+        'empresa': empresa,
+        'moneda': moneda,
+        'tasa': moneda.tasa_cambio if moneda else None,
+    })
 
 
 @require_POST
