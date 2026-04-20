@@ -5,6 +5,7 @@
 
 {% block estilos_extra %}
 <style>
+  /* ── Pantalla ─────────────────────────────────────────────── */
   .cierre-card {
     background: #fff;
     border-radius: 12px;
@@ -37,34 +38,17 @@
     user-select: none;
   }
 
-  .metodo-nombre {
-    font-size: 1.1rem;
-    font-weight: 700;
-    color: #1a1a2e;
-  }
-
-  .metodo-total {
-    font-size: 1.3rem;
-    font-weight: 800;
-    color: #2d6a4f;
-  }
-
-  .metodo-cantidad {
-    font-size: 0.9rem;
-    color: #6c757d;
-    margin-left: 1rem;
-  }
+  .metodo-nombre  { font-size: 1.1rem; font-weight: 700; color: #1a1a2e; }
+  .metodo-total   { font-size: 1.3rem; font-weight: 800; color: #2d6a4f; }
+  .metodo-cantidad{ font-size: 0.9rem; color: #6c757d; margin-left: 1rem; }
 
   .metodo-efectivo-usd { border-left-color: #2d6a4f; }
   .metodo-efectivo-usd .metodo-total { color: #2d6a4f; }
+  .metodo-efectivo-bs  { border-left-color: #40916c; }
+  .metodo-efectivo-bs  .metodo-total { color: #40916c; }
+  .metodo-digital      { border-left-color: #0c63e4; }
+  .metodo-digital      .metodo-total { color: #0c63e4; }
 
-  .metodo-efectivo-bs { border-left-color: #40916c; }
-  .metodo-efectivo-bs .metodo-total { color: #40916c; }
-
-  .metodo-digital { border-left-color: #0c63e4; }
-  .metodo-digital .metodo-total { color: #0c63e4; }
-
-  /* Acordeón de transacciones */
   .accordion-button {
     background: transparent;
     font-weight: 600;
@@ -73,19 +57,9 @@
     border: none;
     box-shadow: none !important;
   }
-
-  .accordion-button:not(.collapsed) {
-    background: transparent;
-    color: #2d6a4f;
-  }
-
-  .accordion-button::after {
-    opacity: 0.5;
-  }
-
-  .accordion-body {
-    padding: 1rem 0;
-  }
+  .accordion-button:not(.collapsed) { background: transparent; color: #2d6a4f; }
+  .accordion-button::after { opacity: 0.5; }
+  .accordion-body { padding: 1rem 0; }
 
   .transaccion-item {
     display: flex;
@@ -98,93 +72,156 @@
     border-left: 3px solid #dee2e6;
   }
 
-  .transaccion-info {
-    display: flex;
-    flex-direction: column;
-    gap: 0.25rem;
-  }
-
-  .transaccion-hora {
-    font-size: 0.8rem;
-    color: #6c757d;
-  }
-
+  .transaccion-info { display: flex; flex-direction: column; gap: 0.25rem; }
+  .transaccion-hora { font-size: 0.8rem; color: #6c757d; }
   .transaccion-productos {
-    font-size: 0.85rem;
-    color: #495057;
-    max-width: 300px;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
+    font-size: 0.85rem; color: #495057;
+    max-width: 300px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
   }
+  .transaccion-total { font-weight: 700; font-size: 1rem; color: #1a1a2e; }
 
-  .transaccion-total {
-    font-weight: 700;
-    font-size: 1rem;
-    color: #1a1a2e;
-  }
-
-  .cierre-feedback {
-    font-size: 0.85rem;
-    min-height: 1.2rem;
-    margin-top: 1rem;
-    text-align: center;
-  }
+  .cierre-feedback { font-size: 0.85rem; min-height: 1.2rem; margin-top: 1rem; text-align: center; }
 
   .btn-cierre {
-    width: 100%;
-    padding: 0.75rem;
-    font-size: 1.1rem;
-    font-weight: 700;
-    background-color: #2d6a4f;
-    color: #fff;
-    border: none;
-    border-radius: 10px;
-    margin-top: 1rem;
-    transition: background-color 0.15s;
+    width: 100%; padding: 0.75rem; font-size: 1.1rem; font-weight: 700;
+    background-color: #2d6a4f; color: #fff; border: none; border-radius: 10px;
+    margin-top: 1rem; transition: background-color 0.15s;
   }
+  .btn-cierre:hover:not(:disabled) { background-color: #1b4332; }
+  .btn-cierre:disabled { background-color: #ced4da; cursor: not-allowed; }
 
-  .btn-cierre:hover:not(:disabled) {
-    background-color: #1b4332;
-  }
-
-  .btn-cierre:disabled {
-    background-color: #ced4da;
-    cursor: not-allowed;
-  }
-
-  .tabla-historico {
-    width: 100%;
-    font-size: 0.9rem;
-    margin-top: 2rem;
-  }
-
+  .tabla-historico { width: 100%; font-size: 0.9rem; margin-top: 2rem; }
   .tabla-historico thead th {
-    background: #1a1a2e;
-    color: #fff;
-    font-weight: 600;
-    padding: 0.75rem;
-    text-align: left;
-    border: none;
+    background: #1a1a2e; color: #fff; font-weight: 600;
+    padding: 0.75rem; text-align: left; border: none;
+  }
+  .tabla-historico tbody td { padding: 0.75rem; border-bottom: 1px solid #f0f0f0; }
+  .tabla-historico tbody tr:hover { background: #f8f9fa; }
+
+  /* ── Área de impresión (visible en modal y en print) ─────── */
+  #area-impresion {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    font-size: 12px;
+    color: #111;
+    background: #fff;
+    padding: 24px 28px;
   }
 
-  .tabla-historico tbody td {
-    padding: 0.75rem;
-    border-bottom: 1px solid #f0f0f0;
+  #area-impresion .pi-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 18px;
+    border-bottom: 2px solid #1a1a2e;
+    padding-bottom: 14px;
+    margin-bottom: 14px;
+  }
+  #area-impresion .pi-logo {
+    width: 72px; height: 72px; object-fit: contain; flex-shrink: 0;
+  }
+  #area-impresion .pi-logo-placeholder {
+    width: 72px; height: 72px; background: #f0f0f0; border: 1px dashed #ccc;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 26px; color: #bbb; flex-shrink: 0; border-radius: 4px;
+  }
+  #area-impresion .pi-empresa-nombre {
+    font-size: 17px; font-weight: 800; color: #1a1a2e; line-height: 1.2;
+  }
+  #area-impresion .pi-empresa-rif {
+    font-size: 12px; font-weight: 700; color: #444; margin-top: 3px;
+  }
+  #area-impresion .pi-empresa-det {
+    font-size: 10.5px; color: #666; margin-top: 2px;
   }
 
-  .tabla-historico tbody tr:hover {
-    background: #f8f9fa;
+  #area-impresion .pi-doc-titulo {
+    text-align: center; margin: 14px 0 6px;
+  }
+  #area-impresion .pi-doc-titulo h2 {
+    font-size: 14px; font-weight: 800; text-transform: uppercase;
+    letter-spacing: 1.5px; color: #1a1a2e; border: 2px solid #1a1a2e;
+    display: inline-block; padding: 4px 20px;
   }
 
-  .badge-metodo {
-    display: inline-block;
-    padding: 0.25rem 0.75rem;
-    border-radius: 12px;
-    font-size: 0.75rem;
-    font-weight: 600;
-    background: #e9ecef;
-    color: #495057;
+  #area-impresion .pi-meta {
+    display: flex; flex-wrap: wrap; gap: 4px 20px;
+    font-size: 11px; color: #555;
+    background: #f8f9fa; border-radius: 4px;
+    padding: 7px 10px; margin-bottom: 16px;
+  }
+  #area-impresion .pi-meta strong { color: #111; }
+
+  #area-impresion .pi-seccion { margin-bottom: 16px; page-break-inside: avoid; }
+  #area-impresion .pi-seccion-header {
+    display: flex; justify-content: space-between; align-items: center;
+    background: #1a1a2e; color: #fff; padding: 5px 10px;
+    font-size: 11.5px; font-weight: 700;
+  }
+  #area-impresion .pi-seccion-header .pi-st { font-size: 12px; font-weight: 800; }
+
+  #area-impresion table {
+    width: 100%; border-collapse: collapse; font-size: 11px;
+  }
+  #area-impresion table thead tr { background: #eef0f3; }
+  #area-impresion table th {
+    padding: 4px 8px; text-align: left; font-weight: 700;
+    color: #333; border-bottom: 1px solid #ddd;
+  }
+  #area-impresion table th.r,
+  #area-impresion table td.r { text-align: right; }
+  #area-impresion table td {
+    padding: 3px 8px; border-bottom: 1px solid #f0f0f0; color: #222;
+  }
+  #area-impresion table tbody tr:last-child td { border-bottom: none; }
+  #area-impresion table tr.pi-subtotal td {
+    padding: 4px 8px; font-weight: 700; background: #f0f4f0;
+    border-top: 1px solid #ccc;
+  }
+
+  #area-impresion .pi-totales {
+    margin-top: 18px; border: 2px solid #1a1a2e; border-radius: 4px;
+    overflow: hidden; page-break-inside: avoid;
+  }
+  #area-impresion .pi-totales-header {
+    background: #1a1a2e; color: #fff; font-weight: 800; font-size: 12px;
+    text-transform: uppercase; letter-spacing: 1px; padding: 6px 12px;
+  }
+  #area-impresion .pi-totales-body {
+    padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 18px;
+  }
+  #area-impresion .pi-tot-item {
+    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  }
+  #area-impresion .pi-tot-item .tl { font-size: 10.5px; color: #555; }
+  #area-impresion .pi-tot-item .tv { font-size: 14px; font-weight: 800; color: #1a1a2e; }
+  #area-impresion .pi-tot-item .tv-bs { font-size: 14px; font-weight: 800; color: #2d6a4f; }
+  #area-impresion .pi-tasa-nota {
+    grid-column: 1 / -1; font-size: 10px; color: #777;
+    border-top: 1px solid #eee; padding-top: 7px; margin-top: 3px;
+  }
+
+  #area-impresion .pi-notas {
+    margin-top: 14px; padding: 8px 10px; background: #fffbee;
+    border-left: 3px solid #ffc107; font-size: 11px; color: #555;
+  }
+
+  #area-impresion .pi-firmas {
+    display: flex; justify-content: space-around; margin-top: 32px; gap: 20px;
+  }
+  #area-impresion .pi-firma { text-align: center; flex: 1; }
+  #area-impresion .pi-firma-linea {
+    border-top: 1px solid #333; width: 80%; margin: 0 auto 4px;
+  }
+  #area-impresion .pi-firma-label { font-size: 9.5px; color: #666; }
+
+  #area-impresion .pi-pie {
+    text-align: center; font-size: 9.5px; color: #aaa;
+    margin-top: 20px; border-top: 1px solid #eee; padding-top: 8px;
+  }
+
+  /* ── Media print: solo el área de impresión (movida al body por JS) ── */
+  @media print {
+    body > * { display: none !important; }
+    body > #area-impresion { display: block !important; }
   }
 </style>
 {% endblock %}
@@ -209,7 +246,7 @@
   </form>
 </div>
 
-<!-- ── Resumen por método de pago ──────────────────────────────────── -->
+<!-- ── Resumen por método de pago ─────────────────────────── -->
 <div class="cierre-card" style="max-width: 700px;">
   <div class="cierre-titulo">
     <i class="bi bi-calendar me-2"></i>{{ fecha.day }} de {{ fecha|date:"F" }} de {{ fecha.year }}
@@ -277,15 +314,191 @@
     <label class="form-label" style="font-size: .9rem; font-weight: 600;">Notas (opcional)</label>
     <textarea id="cierre-notas" class="form-control" rows="2"
               placeholder="Ej: novedades del día, incidencias, etc."
-              style="font-size: .85rem; resize: none;"></textarea>
+              style="font-size: .85rem; resize: none;">{% if cierre_existente %}{{ cierre_existente.notas }}{% endif %}</textarea>
   </div>
 
   <div id="cierre-feedback" class="cierre-feedback text-danger"></div>
 
-  <button class="btn-cierre" id="btn-guardar-cierre">
-    <i class="bi bi-check-lg me-1"></i>Registrar cierre
-  </button>
+  <!-- Botones -->
+  <div class="d-flex flex-column gap-2 mt-3">
+    <button class="btn-cierre" id="btn-guardar-cierre">
+      <i class="bi bi-check-lg me-1"></i>Registrar cierre
+    </button>
+    <button type="button" id="btn-abrir-impresion"
+            class="btn btn-outline-secondary w-100 fw-semibold py-2">
+      <i class="bi bi-printer me-2"></i>Vista previa e imprimir
+    </button>
+  </div>
 </div>
+
+
+<!-- ══ MODAL IMPRESIÓN ════════════════════════════════════════ -->
+<div class="modal fade" id="modalImpresion" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-xl modal-dialog-centered modal-dialog-scrollable">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header border-0 px-4" style="background:#1a1a2e; color:#fff;">
+        <h5 class="modal-title fw-bold fs-6">
+          <i class="bi bi-file-text me-2"></i>Cierre de caja — {{ fecha|date:"d/m/Y" }}
+        </h5>
+        <div class="d-flex align-items-center gap-2 ms-auto">
+          <button type="button" id="btn-imprimir-cierre"
+                  class="btn btn-sm fw-semibold"
+                  style="background:rgba(255,255,255,0.18); color:#fff; border:1px solid rgba(255,255,255,0.35);">
+            <i class="bi bi-printer-fill me-1"></i>Imprimir / PDF
+          </button>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+        </div>
+      </div>
+
+      <div class="modal-body p-0" style="overflow-y: auto; max-height: 80vh;">
+
+        <!-- ══ ÁREA DE IMPRESIÓN ══════════════════════════════ -->
+        <div id="area-impresion">
+
+          <!-- Encabezado empresa -->
+          <div class="pi-header">
+            {% if empresa and empresa.logo %}
+              <img class="pi-logo" src="{{ empresa.logo.url }}" alt="Logo">
+            {% else %}
+              <div class="pi-logo-placeholder">🏪</div>
+            {% endif %}
+            <div>
+              <div class="pi-empresa-nombre">{{ empresa.nombre|default:"Mi Empresa" }}</div>
+              <div class="pi-empresa-rif">RIF: {{ empresa.rif|default:"—" }}</div>
+              {% if empresa and empresa.telefono %}
+                <div class="pi-empresa-det">Tel.: {{ empresa.telefono }}</div>
+              {% endif %}
+              {% if empresa and empresa.direccion %}
+                <div class="pi-empresa-det">{{ empresa.direccion }}</div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Título -->
+          <div class="pi-doc-titulo">
+            <h2>Cierre de Caja Diario</h2>
+          </div>
+
+          <!-- Meta -->
+          <div class="pi-meta">
+            <div>Fecha: <strong>{{ fecha|date:"d \d\e F \d\e Y" }}</strong></div>
+            <div>Tasa BCV: <strong>Bs. {{ tasa|default:"—" }} / $1</strong></div>
+            <div>Transacciones: <strong>{{ total_ventas }}</strong></div>
+            {% if cierre_existente %}
+              <div>Registrado: <strong>{{ cierre_existente.fecha_cierre|date:"H:i" }}</strong></div>
+            {% endif %}
+          </div>
+
+          <!-- Métodos de pago -->
+          {% for metodo in resumen_metodos_lista %}
+          {% if metodo.cantidad > 0 %}
+          <div class="pi-seccion">
+            <div class="pi-seccion-header">
+              <span>
+                {{ metodo.nombre }}
+                &nbsp;·&nbsp;
+                {{ metodo.cantidad }} transacción{% if metodo.cantidad != 1 %}es{% endif %}
+              </span>
+              <span class="pi-st">
+                {% if metodo.codigo == 'EFECTIVO_BS' %}
+                  Bs. {{ metodo.total_bs|floatformat:2 }}
+                {% else %}
+                  $ {{ metodo.total_usd|floatformat:2 }}
+                {% endif %}
+              </span>
+            </div>
+            <table>
+              <thead>
+                <tr>
+                  <th style="width:36px;">#</th>
+                  <th style="width:48px;">Hora</th>
+                  <th>Productos</th>
+                  <th class="r" style="width:72px;">USD</th>
+                  <th class="r" style="width:86px;">Bs.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for venta in metodo.ventas %}
+                <tr>
+                  <td>{{ venta.pk }}</td>
+                  <td>{{ venta.fecha|date:"H:i" }}</td>
+                  <td style="color:#555; font-size:10.5px;">
+                    {% for d in venta.detalles.all %}{{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
+                  </td>
+                  <td class="r">$ {{ venta.total_usd|floatformat:2 }}</td>
+                  <td class="r">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="pi-subtotal">
+                  <td colspan="3">Subtotal {{ metodo.nombre }}</td>
+                  <td class="r">$ {{ metodo.total_usd|floatformat:2 }}</td>
+                  <td class="r">Bs. {{ metodo.total_bs|floatformat:2 }}</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          {% endif %}
+          {% empty %}
+            <p style="text-align:center; color:#999; padding:24px 0;">No hay ventas registradas para este día.</p>
+          {% endfor %}
+
+          <!-- Totales generales -->
+          <div class="pi-totales">
+            <div class="pi-totales-header">Total General del Día</div>
+            <div class="pi-totales-body">
+              <div class="pi-tot-item">
+                <span class="tl">Total USD</span>
+                <span class="tv">$ {{ total_general_usd|floatformat:2 }}</span>
+              </div>
+              <div class="pi-tot-item">
+                <span class="tl">Total Bolívares</span>
+                <span class="tv-bs">Bs. {{ total_general_bs|floatformat:2 }}</span>
+              </div>
+              {% if tasa %}
+              <div class="pi-tasa-nota">
+                Tasa de cambio: <strong>Bs. {{ tasa }} / $1 USD</strong>
+                {% if moneda %} · Actualizada: {{ moneda.ultima_actualizacion|date:"d/m/Y H:i" }}{% endif %}
+              </div>
+              {% endif %}
+            </div>
+          </div>
+
+          <!-- Notas -->
+          {% if cierre_existente and cierre_existente.notas %}
+          <div class="pi-notas">
+            <strong>Notas:</strong> {{ cierre_existente.notas }}
+          </div>
+          {% endif %}
+
+          <!-- Firmas -->
+          <div class="pi-firmas">
+            <div class="pi-firma">
+              <div class="pi-firma-linea"></div>
+              <div class="pi-firma-label">Responsable de caja</div>
+            </div>
+            <div class="pi-firma">
+              <div class="pi-firma-linea"></div>
+              <div class="pi-firma-label">Supervisor / Gerente</div>
+            </div>
+          </div>
+
+          <!-- Pie -->
+          <div class="pi-pie">
+            {{ empresa.nombre|default:"POS Core" }}
+            {% if empresa and empresa.rif %} · RIF: {{ empresa.rif }}{% endif %}
+            · Generado el {% now "d/m/Y \a \l\a\s H:i" %}
+          </div>
+
+        </div>
+        <!-- ══ FIN ÁREA DE IMPRESIÓN ═══════════════════════════ -->
+
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL IMPRESIÓN ════════════════════════════════════ -->
+
 
 <!-- ── Histórico de cierres ──────────────────────────────────── -->
 {% if historico %}
@@ -329,6 +542,7 @@
 
 {% block scripts_extra %}
 <script>
+  // ── Guardar cierre ────────────────────────────────────────────
   document.getElementById('btn-guardar-cierre').addEventListener('click', function () {
     const feedback = document.getElementById('cierre-feedback');
     const notas = document.getElementById('cierre-notas').value.trim();
@@ -362,6 +576,21 @@
         this.disabled = false;
         this.innerHTML = '<i class="bi bi-check-lg me-1"></i>Registrar cierre';
       });
+  });
+
+  // ── Modal de impresión ───────────────────────────────────────
+  document.getElementById('btn-abrir-impresion').addEventListener('click', () => {
+    new bootstrap.Modal(document.getElementById('modalImpresion')).show();
+  });
+
+  // Imprimir: mover #area-impresion al body, imprimir, regresar
+  document.getElementById('btn-imprimir-cierre').addEventListener('click', () => {
+    const area      = document.getElementById('area-impresion');
+    const modalBody = area.parentNode;
+
+    document.body.appendChild(area);          // sube al body
+    window.print();
+    modalBody.appendChild(area);              // regresa al modal
   });
 </script>
 {% endblock %}

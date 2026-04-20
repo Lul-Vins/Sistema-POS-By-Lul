@@ -8,4 +8,5 @@ urlpatterns = [
     path('anular/<int:pk>/', views.anular_venta, name='anular_venta'),
     path('cierre/', views.cierre_caja, name='cierre_caja'),
     path('guardar-cierre/', views.guardar_cierre, name='guardar_cierre'),
+    path('cierre/imprimir/', views.imprimir_cierre, name='imprimir_cierre'),
 ]

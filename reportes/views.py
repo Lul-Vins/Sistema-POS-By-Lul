@@ -96,6 +96,10 @@ def cierre_caja(request):
     # Crear lista de métodos con datos (para iterar en template)
     resumen_metodos_lista = list(resumen_metodos.values())
 
+    total_general_usd = sum(m['total_usd'] for m in resumen_metodos_lista)
+    total_general_bs  = sum(m['total_bs']  for m in resumen_metodos_lista)
+    total_ventas      = sum(m['cantidad']  for m in resumen_metodos_lista)
+
     # Verificar si ya existe cierre para este día
     cierre_existente = CierreCaja.objects.filter(fecha=fecha).first()
 
@@ -109,11 +113,65 @@ def cierre_caja(request):
         'fecha': fecha,
         'resumen_metodos': resumen_metodos,
         'resumen_metodos_lista': resumen_metodos_lista,
-        'cierre_existente': cierre_existente,
-        'historico': historico,
-        'moneda': moneda,
-        'empresa': empresa,
-        'tasa': moneda.tasa_cambio if moneda else None,
+        'total_general_usd': total_general_usd,
+        'total_general_bs':  total_general_bs,
+        'total_ventas':      total_ventas,
+        'cierre_existente':  cierre_existente,
+        'historico':         historico,
+        'moneda':            moneda,
+        'empresa':           empresa,
+        'tasa':              moneda.tasa_cambio if moneda else None,
+    })
+
+
+def imprimir_cierre(request):
+    fecha_str = request.GET.get('fecha', '')
+    try:
+        fecha = date.fromisoformat(fecha_str)
+    except ValueError:
+        fecha = timezone.localdate()
+
+    ventas_dia = (
+        Venta.objects
+        .filter(fecha__date=fecha, estado='COMPLETADA')
+        .prefetch_related('detalles__producto')
+        .order_by('fecha')
+    )
+
+    resumen_metodos = []
+    for codigo_metodo, nombre_metodo in Venta.METODO_PAGO:
+        ventas_metodo = [v for v in ventas_dia if v.metodo_pago == codigo_metodo]
+        if not ventas_metodo:
+            continue
+        total_usd = sum(float(v.total_usd) for v in ventas_metodo)
+        total_bs  = sum(float(v.total_bs)  for v in ventas_metodo)
+        resumen_metodos.append({
+            'nombre':    nombre_metodo,
+            'codigo':    codigo_metodo,
+            'total_usd': total_usd,
+            'total_bs':  total_bs,
+            'cantidad':  len(ventas_metodo),
+            'ventas':    ventas_metodo,
+        })
+
+    total_general_usd = sum(m['total_usd'] for m in resumen_metodos)
+    total_general_bs  = sum(m['total_bs']  for m in resumen_metodos)
+    total_ventas      = sum(m['cantidad']  for m in resumen_metodos)
+
+    moneda  = Moneda.objects.first()
+    empresa = Empresa.objects.first()
+    cierre  = CierreCaja.objects.filter(fecha=fecha).first()
+
+    return render(request, 'reportes/cierre_caja_print.html', {
+        'fecha':             fecha,
+        'resumen_metodos':   resumen_metodos,
+        'total_general_usd': total_general_usd,
+        'total_general_bs':  total_general_bs,
+        'total_ventas':      total_ventas,
+        'moneda':            moneda,
+        'empresa':           empresa,
+        'tasa':              moneda.tasa_cambio if moneda else None,
+        'cierre':            cierre,
     })
 
 

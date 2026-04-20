@@ -1,0 +1,463 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Cierre de caja — {{ fecha|date:"d/m/Y" }}</title>
+  <style>
+    /* ── Reset y tipografía ── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Segoe UI', Arial, sans-serif;
+      font-size: 12px;
+      color: #111;
+      background: #fff;
+      padding: 24px 32px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    /* ── Encabezado empresa ── */
+    .header {
+      display: flex;
+      align-items: flex-start;
+      gap: 20px;
+      border-bottom: 2px solid #1a1a2e;
+      padding-bottom: 14px;
+      margin-bottom: 16px;
+    }
+
+    .header-logo {
+      width: 80px;
+      height: 80px;
+      object-fit: contain;
+      flex-shrink: 0;
+    }
+
+    .header-logo-placeholder {
+      width: 80px;
+      height: 80px;
+      background: #f0f0f0;
+      border: 1px dashed #ccc;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 28px;
+      color: #bbb;
+      flex-shrink: 0;
+      border-radius: 4px;
+    }
+
+    .header-info {
+      flex: 1;
+    }
+
+    .empresa-nombre {
+      font-size: 18px;
+      font-weight: 800;
+      color: #1a1a2e;
+      line-height: 1.2;
+    }
+
+    .empresa-rif {
+      font-size: 13px;
+      font-weight: 700;
+      color: #444;
+      margin-top: 3px;
+    }
+
+    .empresa-detalle {
+      font-size: 11px;
+      color: #666;
+      margin-top: 2px;
+    }
+
+    /* ── Título del documento ── */
+    .doc-titulo {
+      text-align: center;
+      margin: 18px 0 6px;
+    }
+
+    .doc-titulo h2 {
+      font-size: 16px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: #1a1a2e;
+      border: 2px solid #1a1a2e;
+      display: inline-block;
+      padding: 5px 22px;
+    }
+
+    .doc-meta {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11.5px;
+      color: #555;
+      margin: 10px 0 18px;
+      padding: 8px 12px;
+      background: #f8f9fa;
+      border-radius: 4px;
+    }
+
+    .doc-meta span { font-weight: 600; color: #222; }
+
+    /* ── Sección por método de pago ── */
+    .seccion-metodo {
+      margin-bottom: 18px;
+      page-break-inside: avoid;
+    }
+
+    .seccion-metodo-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: #1a1a2e;
+      color: #fff;
+      padding: 6px 10px;
+      font-size: 12px;
+      font-weight: 700;
+    }
+
+    .seccion-metodo-header .metodo-total-header {
+      font-size: 13px;
+      font-weight: 800;
+    }
+
+    table.ventas-tabla {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11px;
+    }
+
+    table.ventas-tabla thead tr {
+      background: #eef0f3;
+    }
+
+    table.ventas-tabla th {
+      padding: 5px 8px;
+      text-align: left;
+      font-weight: 700;
+      color: #333;
+      border-bottom: 1px solid #ddd;
+    }
+
+    table.ventas-tabla th.r,
+    table.ventas-tabla td.r { text-align: right; }
+
+    table.ventas-tabla td {
+      padding: 4px 8px;
+      border-bottom: 1px solid #f0f0f0;
+      color: #222;
+    }
+
+    table.ventas-tabla tbody tr:last-child td { border-bottom: none; }
+
+    .productos-celda {
+      color: #555;
+      font-size: 10.5px;
+    }
+
+    .subtotal-fila td {
+      padding: 5px 8px;
+      font-weight: 700;
+      background: #f0f4f0;
+      border-top: 1px solid #ccc;
+    }
+
+    /* ── Totales generales ── */
+    .totales-box {
+      margin-top: 20px;
+      border: 2px solid #1a1a2e;
+      border-radius: 4px;
+      overflow: hidden;
+      page-break-inside: avoid;
+    }
+
+    .totales-box-header {
+      background: #1a1a2e;
+      color: #fff;
+      font-weight: 800;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      padding: 7px 14px;
+    }
+
+    .totales-box-body {
+      padding: 12px 14px;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 6px 20px;
+    }
+
+    .total-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 8px;
+    }
+
+    .total-item .tl { font-size: 11px; color: #555; }
+
+    .total-item .tv {
+      font-size: 14px;
+      font-weight: 800;
+      color: #1a1a2e;
+    }
+
+    .total-item .tv-bs {
+      font-size: 14px;
+      font-weight: 800;
+      color: #2d6a4f;
+    }
+
+    .tasa-nota {
+      grid-column: 1 / -1;
+      font-size: 10.5px;
+      color: #777;
+      border-top: 1px solid #eee;
+      padding-top: 8px;
+      margin-top: 4px;
+    }
+
+    /* ── Sin ventas ── */
+    .sin-ventas {
+      text-align: center;
+      color: #999;
+      padding: 28px 0;
+      font-size: 13px;
+    }
+
+    /* ── Notas ── */
+    .notas-box {
+      margin-top: 16px;
+      padding: 10px 12px;
+      background: #fffbee;
+      border-left: 3px solid #ffc107;
+      font-size: 11px;
+      color: #555;
+    }
+
+    .notas-box strong { color: #222; }
+
+    /* ── Firmas ── */
+    .firmas {
+      display: flex;
+      justify-content: space-around;
+      margin-top: 36px;
+      gap: 20px;
+      page-break-inside: avoid;
+    }
+
+    .firma-bloque {
+      text-align: center;
+      flex: 1;
+    }
+
+    .firma-linea {
+      border-top: 1px solid #333;
+      width: 80%;
+      margin: 0 auto 5px;
+    }
+
+    .firma-label {
+      font-size: 10px;
+      color: #666;
+    }
+
+    /* ── Pie del documento ── */
+    .pie {
+      text-align: center;
+      font-size: 10px;
+      color: #aaa;
+      margin-top: 24px;
+      border-top: 1px solid #eee;
+      padding-top: 10px;
+    }
+
+    /* ── Botón imprimir (solo en pantalla) ── */
+    .btn-imprimir {
+      display: block;
+      margin: 0 auto 24px;
+      padding: 10px 32px;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      letter-spacing: 0.5px;
+    }
+
+    .btn-imprimir:hover { background: #2d3561; }
+
+    /* ── Media print ── */
+    @media print {
+      body { padding: 0; }
+      .btn-imprimir { display: none; }
+      a { text-decoration: none; color: inherit; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Botón solo visible en pantalla -->
+  <button class="btn-imprimir" onclick="window.print()">🖨 Imprimir / Exportar PDF</button>
+
+  <!-- ══ ENCABEZADO EMPRESA ══════════════════════════════════════ -->
+  <div class="header">
+    {% if empresa and empresa.logo %}
+      <img class="header-logo" src="{{ request.scheme }}://{{ request.get_host }}{{ empresa.logo.url }}" alt="Logo">
+    {% else %}
+      <div class="header-logo-placeholder">🏪</div>
+    {% endif %}
+
+    <div class="header-info">
+      <div class="empresa-nombre">{{ empresa.nombre|default:"Mi Empresa" }}</div>
+      <div class="empresa-rif">RIF: {{ empresa.rif|default:"—" }}</div>
+      {% if empresa and empresa.telefono %}
+        <div class="empresa-detalle">Teléfono: {{ empresa.telefono }}</div>
+      {% endif %}
+      {% if empresa and empresa.direccion %}
+        <div class="empresa-detalle">{{ empresa.direccion }}</div>
+      {% endif %}
+    </div>
+  </div>
+  <!-- ══ FIN ENCABEZADO ══════════════════════════════════════════ -->
+
+
+  <!-- ══ TÍTULO ══════════════════════════════════════════════════ -->
+  <div class="doc-titulo">
+    <h2>Cierre de Caja Diario</h2>
+  </div>
+
+  <div class="doc-meta">
+    <div>Fecha: <span>{{ fecha|date:"d \d\e F \d\e Y" }}</span></div>
+    <div>Tasa BCV: <span>Bs. {{ tasa|default:"—" }} / $1</span></div>
+    <div>Total transacciones: <span>{{ total_ventas }}</span></div>
+    {% if cierre %}
+      <div>Registrado: <span>{{ cierre.fecha_cierre|date:"H:i" }}</span></div>
+    {% endif %}
+  </div>
+  <!-- ══ FIN TÍTULO ══════════════════════════════════════════════ -->
+
+
+  <!-- ══ CUERPO: MÉTODOS DE PAGO ════════════════════════════════ -->
+  {% if resumen_metodos %}
+
+    {% for metodo in resumen_metodos %}
+    <div class="seccion-metodo">
+
+      <div class="seccion-metodo-header">
+        <span>{{ metodo.nombre }}
+          &nbsp;—&nbsp;
+          {{ metodo.cantidad }} transacción{% if metodo.cantidad != 1 %}es{% endif %}
+        </span>
+        <span class="metodo-total-header">
+          {% if metodo.codigo == 'EFECTIVO_BS' %}
+            Bs. {{ metodo.total_bs|floatformat:2 }}
+          {% else %}
+            $ {{ metodo.total_usd|floatformat:2 }}
+          {% endif %}
+        </span>
+      </div>
+
+      <table class="ventas-tabla">
+        <thead>
+          <tr>
+            <th style="width:40px;">#</th>
+            <th style="width:55px;">Hora</th>
+            <th>Productos</th>
+            <th class="r" style="width:80px;">USD</th>
+            <th class="r" style="width:90px;">Bs.</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for venta in metodo.ventas %}
+          <tr>
+            <td>{{ venta.pk }}</td>
+            <td>{{ venta.fecha|date:"H:i" }}</td>
+            <td class="productos-celda">
+              {% for d in venta.detalles.all %}
+                {{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}
+              {% endfor %}
+            </td>
+            <td class="r">$ {{ venta.total_usd|floatformat:2 }}</td>
+            <td class="r">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+          </tr>
+          {% endfor %}
+          <tr class="subtotal-fila">
+            <td colspan="3">Subtotal {{ metodo.nombre }}</td>
+            <td class="r">$ {{ metodo.total_usd|floatformat:2 }}</td>
+            <td class="r">Bs. {{ metodo.total_bs|floatformat:2 }}</td>
+          </tr>
+        </tbody>
+      </table>
+
+    </div>
+    {% endfor %}
+
+  {% else %}
+    <div class="sin-ventas">No hay ventas registradas para este día.</div>
+  {% endif %}
+  <!-- ══ FIN CUERPO ══════════════════════════════════════════════ -->
+
+
+  <!-- ══ TOTALES GENERALES ══════════════════════════════════════ -->
+  <div class="totales-box">
+    <div class="totales-box-header">Total General del Día</div>
+    <div class="totales-box-body">
+      <div class="total-item">
+        <span class="tl">Total en USD</span>
+        <span class="tv">$ {{ total_general_usd|floatformat:2 }}</span>
+      </div>
+      <div class="total-item">
+        <span class="tl">Total en Bolívares</span>
+        <span class="tv-bs">Bs. {{ total_general_bs|floatformat:2 }}</span>
+      </div>
+      {% if tasa %}
+      <div class="tasa-nota">
+        Tasa de cambio aplicada: <strong>Bs. {{ tasa }} por $1 USD</strong> (BCV)
+        {% if moneda %}&nbsp;·&nbsp;Actualizada: {{ moneda.ultima_actualizacion|date:"d/m/Y H:i" }}{% endif %}
+      </div>
+      {% endif %}
+    </div>
+  </div>
+  <!-- ══ FIN TOTALES ════════════════════════════════════════════ -->
+
+
+  <!-- ══ NOTAS DEL CIERRE ══════════════════════════════════════ -->
+  {% if cierre and cierre.notas %}
+  <div class="notas-box">
+    <strong>Notas:</strong> {{ cierre.notas }}
+  </div>
+  {% endif %}
+  <!-- ══ FIN NOTAS ══════════════════════════════════════════════ -->
+
+
+  <!-- ══ FIRMAS ════════════════════════════════════════════════ -->
+  <div class="firmas">
+    <div class="firma-bloque">
+      <div class="firma-linea"></div>
+      <div class="firma-label">Responsable de caja</div>
+    </div>
+    <div class="firma-bloque">
+      <div class="firma-linea"></div>
+      <div class="firma-label">Supervisor / Gerente</div>
+    </div>
+  </div>
+  <!-- ══ FIN FIRMAS ═════════════════════════════════════════════ -->
+
+
+  <!-- ══ PIE ══════════════════════════════════════════════════ -->
+  <div class="pie">
+    Documento generado el {% now "d/m/Y \a \l\a\s H:i" %}
+    &nbsp;·&nbsp;
+    {{ empresa.nombre|default:"POS Core" }}
+    {% if empresa and empresa.rif %}&nbsp;·&nbsp;RIF: {{ empresa.rif }}{% endif %}
+  </div>
+
+</body>
+</html>
