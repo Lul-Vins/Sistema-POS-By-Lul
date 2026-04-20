@@ -1,0 +1,256 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>Ticket #{{ venta.pk }}</title>
+  <style>
+    @page {
+      size: 80mm auto;
+      margin: 3mm 2mm;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      width: 76mm;
+      font-family: 'Courier New', Courier, monospace;
+      font-size: 9.5pt;
+      color: #000;
+      background: #fff;
+      padding: 2mm;
+    }
+
+    .center { text-align: center; }
+    .right  { text-align: right; }
+    .bold   { font-weight: bold; }
+    .small  { font-size: 8pt; }
+    .muted  { color: #444; }
+
+    .sep-solid { border-top: 1px solid #000; margin: 4pt 0; }
+    .sep-dash  { border-top: 1px dashed #000; margin: 4pt 0; }
+
+    .logo-wrap { text-align: center; margin-bottom: 3pt; }
+    .logo-wrap img {
+      max-height: 48pt;
+      max-width: 60mm;
+      object-fit: contain;
+    }
+
+    .empresa-nombre {
+      font-size: 11pt;
+      font-weight: bold;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .empresa-sub {
+      font-size: 8pt;
+      text-align: center;
+      color: #333;
+    }
+
+    table.meta {
+      width: 100%;
+      font-size: 8.5pt;
+    }
+    table.meta td { padding: 0; }
+
+    table.items {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 9pt;
+    }
+    table.items th {
+      font-size: 7.5pt;
+      font-weight: bold;
+      border-bottom: 1px solid #000;
+      padding: 1pt 0;
+    }
+    table.items td {
+      padding: 1.5pt 0;
+      vertical-align: top;
+    }
+    table.items .item-nombre {
+      max-width: 40mm;
+      word-break: break-word;
+      line-height: 1.15;
+    }
+    table.items .num { text-align: right; white-space: nowrap; }
+
+    .total-wrap {
+      text-align: center;
+      margin: 5pt 0 3pt;
+    }
+    .total-num {
+      font-size: 17pt;
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    table.desglose {
+      width: 100%;
+      font-size: 9pt;
+    }
+    table.desglose td { padding: 1pt 0; }
+    table.desglose .lbl { color: #444; }
+    table.desglose .val { text-align: right; font-weight: bold; }
+
+    .gracias {
+      text-align: center;
+      font-size: 9.5pt;
+      font-weight: bold;
+      margin: 5pt 0 2pt;
+      letter-spacing: 0.3px;
+    }
+    .pie {
+      text-align: center;
+      font-size: 7.5pt;
+      color: #555;
+      margin-top: 2pt;
+    }
+
+    /* Vista previa en pantalla */
+    @media screen {
+      html, body { height: 100%; }
+      html { background: #d6d6d6; }
+      body {
+        width: 100%;
+        max-width: 340px;
+        margin: 0 auto;
+        padding: 12px 14px 16px;
+        background: #fff;
+        font-size: 10.5pt;
+      }
+      table.items, table.desglose, table.meta { font-size: 10pt; }
+      .total-num { font-size: 19pt; }
+
+      .btn-print {
+        display: block;
+        width: 100%;
+        padding: 10px;
+        background: #1a1a2e;
+        color: #fff;
+        border: none;
+        font-family: 'Segoe UI', Arial, sans-serif;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        margin-bottom: 10px;
+        border-radius: 0;
+      }
+      .btn-print:hover { background: #2d3561; }
+    }
+
+    @media print {
+      .btn-print { display: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <button class="btn-print" onclick="window.print()">🖨 Imprimir ticket</button>
+
+  <!-- Encabezado empresa -->
+  {% if empresa and empresa.logo %}
+  <div class="logo-wrap">
+    <img src="{{ request.scheme }}://{{ request.get_host }}{{ empresa.logo.url }}" alt="Logo">
+  </div>
+  {% endif %}
+
+  <div class="empresa-nombre">{{ empresa.nombre|default:"Mi Empresa" }}</div>
+  <div class="empresa-sub">RIF: {{ empresa.rif|default:"—" }}</div>
+  {% if empresa and empresa.telefono %}
+  <div class="empresa-sub">Tel: {{ empresa.telefono }}</div>
+  {% endif %}
+  {% if empresa and empresa.direccion %}
+  <div class="empresa-sub">{{ empresa.direccion }}</div>
+  {% endif %}
+
+  <div class="sep-solid"></div>
+
+  <!-- Meta de la venta -->
+  <table class="meta">
+    <tr>
+      <td>Ticket N° {{ venta.pk }}</td>
+      <td class="right">{{ venta.fecha|date:"d/m/Y" }}</td>
+    </tr>
+    <tr>
+      <td class="muted">{{ venta.get_metodo_pago_display }}</td>
+      <td class="right muted">{{ venta.fecha|date:"H:i" }}</td>
+    </tr>
+  </table>
+
+  <div class="sep-dash"></div>
+
+  <!-- Ítems en Bs -->
+  <table class="items">
+    <thead>
+      <tr>
+        <th style="text-align:left;">Descripción</th>
+        <th class="num">Cant</th>
+        <th class="num">P.Unit</th>
+        <th class="num">Total</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for d in detalles_bs %}
+      <tr>
+        <td class="item-nombre">{{ d.nombre }}</td>
+        <td class="num">{{ d.cantidad }}</td>
+        <td class="num">{{ d.precio_bs|floatformat:2 }}</td>
+        <td class="num">{{ d.subtotal_bs|floatformat:2 }}</td>
+      </tr>
+      {% endfor %}
+    </tbody>
+  </table>
+
+  <div class="sep-solid"></div>
+
+  <!-- Total principal -->
+  <div class="total-wrap">
+    <div class="small muted">TOTAL A PAGAR</div>
+    <div class="total-num">Bs. {{ venta.total_bs|floatformat:2 }}</div>
+  </div>
+
+  <!-- Desglose -->
+  <div class="sep-dash"></div>
+  <table class="desglose">
+    <tr>
+      <td class="lbl">Tasa BCV</td>
+      <td class="val">Bs. {{ tasa|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Método de pago</td>
+      <td class="val">{{ venta.get_metodo_pago_display }}</td>
+    </tr>
+    {% if monto_recibido_bs is not None %}
+    <tr>
+      <td class="lbl">Monto recibido</td>
+      <td class="val">Bs. {{ monto_recibido_bs|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Vuelto</td>
+      <td class="val">Bs. {{ vuelto_bs|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  {% if venta.notas %}
+  <div class="sep-dash"></div>
+  <div class="small muted">Nota: {{ venta.notas }}</div>
+  {% endif %}
+
+  <div class="sep-dash"></div>
+
+  <div class="gracias">¡Gracias por su compra!</div>
+  <div class="pie">
+    {{ empresa.nombre|default:"POS Core" }} — {{ venta.fecha|date:"d/m/Y H:i" }}
+  </div>
+
+  <script>
+    document.querySelector('.btn-print').addEventListener('click', function () {
+      window.print();
+      window.onafterprint = function () { window.close(); };
+    });
+  </script>
+
+</body>
+</html>

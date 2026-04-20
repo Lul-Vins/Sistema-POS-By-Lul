@@ -211,6 +211,60 @@
     </form>
   </div>
 
+  <!-- ── Impresora de tickets ────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-printer"></i> Impresora de tickets
+    </div>
+
+    <!-- Toggle activar/desactivar -->
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+      <div>
+        <div style="font-size:.95rem; font-weight:600; color:#1a1a2e;">
+          Imprimir ticket automáticamente al cobrar
+        </div>
+        <div style="font-size:.82rem; color:#6c757d; margin-top:2px;">
+          Envía el ticket directo a la impresora térmica (80 mm) sin diálogos.
+          Actívalo solo si tienes la impresora conectada.
+        </div>
+      </div>
+      <div class="form-check form-switch" style="padding:0; flex-shrink:0;">
+        <input class="form-check-input" type="checkbox" role="switch"
+               id="toggle-impresora" style="width:3rem; height:1.5rem; cursor:pointer;"
+               {% if empresa.imprimir_ticket %}checked{% endif %}>
+      </div>
+    </div>
+
+    <!-- Selector de impresora -->
+    <div id="bloque-impresora" style="{% if not empresa.imprimir_ticket %}display:none;{% endif %}">
+      <label class="campo-label">Impresora térmica</label>
+      <div class="d-flex gap-2 mb-2">
+        <select id="select-impresora" class="form-select campo-input" style="font-size:.9rem;">
+          <option value="">— Selecciona una impresora —</option>
+          {% if empresa.nombre_impresora %}
+          <option value="{{ empresa.nombre_impresora }}" selected>{{ empresa.nombre_impresora }}</option>
+          {% endif %}
+        </select>
+        <button type="button" id="btn-listar" class="btn btn-outline-secondary"
+                title="Buscar impresoras instaladas" style="white-space:nowrap;">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" id="btn-guardar-impresora"
+                class="btn btn-guardar-config btn-sm px-3">
+          <i class="bi bi-check-lg me-1"></i>Guardar
+        </button>
+        <button type="button" id="btn-test-impresora"
+                class="btn btn-outline-secondary btn-sm px-3">
+          <i class="bi bi-printer me-1"></i>Imprimir prueba
+        </button>
+      </div>
+    </div>
+
+    <div id="ticket-feedback" style="font-size:.82rem; min-height:1.1rem; margin-top:.75rem;"></div>
+  </div>
+
   <!-- ── Tasa de cambio ──────────────────────────────────── -->
   <div class="config-card">
     <div class="config-section-title">
@@ -260,6 +314,106 @@
     document.getElementById(id).addEventListener('input', function () {
       this.value = this.value.replace(/\D/g, '');
     });
+  });
+
+  const CSRF             = '{{ csrf_token }}';
+  const URL_TOGGLE       = "{% url 'configuracion:toggle_impresora' %}";
+  const URL_LISTAR       = "{% url 'configuracion:listar_impresoras' %}";
+  const URL_GUARDAR_IMP  = "{% url 'configuracion:guardar_impresora' %}";
+  const URL_TEST         = "{% url 'configuracion:test_impresora' %}";
+  const feedbackImp      = document.getElementById('ticket-feedback');
+  const bloqueImpresora  = document.getElementById('bloque-impresora');
+  const selectImpresora  = document.getElementById('select-impresora');
+
+  function mostrarFeedbackImp(msg, ok) {
+    feedbackImp.textContent = msg;
+    feedbackImp.style.color = ok ? '#2d6a4f' : '#dc3545';
+    if (ok) setTimeout(() => { feedbackImp.textContent = ''; }, 3000);
+  }
+
+  // Toggle activar/desactivar
+  document.getElementById('toggle-impresora').addEventListener('change', function () {
+    const activado = this.checked;
+    bloqueImpresora.style.display = activado ? '' : 'none';
+
+    fetch(URL_TOGGLE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ activado }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          mostrarFeedbackImp(activado ? 'Impresión automática activada.' : 'Impresión automática desactivada.', true);
+        } else {
+          mostrarFeedbackImp(data.error || 'Error al guardar.', false);
+          this.checked = !activado;
+          bloqueImpresora.style.display = !activado ? '' : 'none';
+        }
+      })
+      .catch(() => { mostrarFeedbackImp('Error de conexión.', false); this.checked = !activado; });
+  });
+
+  // Listar impresoras instaladas en Windows
+  document.getElementById('btn-listar').addEventListener('click', function () {
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    this.disabled  = true;
+
+    fetch(URL_LISTAR)
+      .then(r => r.json())
+      .then(data => {
+        const actual = selectImpresora.value;
+        selectImpresora.innerHTML = '<option value="">— Selecciona una impresora —</option>';
+        data.impresoras.forEach(nombre => {
+          const opt      = document.createElement('option');
+          opt.value      = nombre;
+          opt.textContent = nombre;
+          if (nombre === actual || nombre === data.predeterminada) opt.selected = true;
+          selectImpresora.appendChild(opt);
+        });
+        if (data.impresoras.length === 0) {
+          mostrarFeedbackImp('No se encontraron impresoras instaladas.', false);
+        }
+      })
+      .catch(() => mostrarFeedbackImp('Error al listar impresoras.', false))
+      .finally(() => {
+        this.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+        this.disabled  = false;
+      });
+  });
+
+  // Guardar nombre de impresora
+  document.getElementById('btn-guardar-impresora').addEventListener('click', function () {
+    const nombre = selectImpresora.value.trim();
+    if (!nombre) { mostrarFeedbackImp('Selecciona una impresora.', false); return; }
+
+    fetch(URL_GUARDAR_IMP, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ nombre }),
+    })
+      .then(r => r.json())
+      .then(data => mostrarFeedbackImp(data.ok ? 'Impresora guardada.' : (data.error || 'Error.'), data.ok))
+      .catch(() => mostrarFeedbackImp('Error de conexión.', false));
+  });
+
+  // Test de impresión
+  document.getElementById('btn-test-impresora').addEventListener('click', function () {
+    this.disabled  = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Imprimiendo...';
+
+    fetch(URL_TEST, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({}),
+    })
+      .then(r => r.json())
+      .then(data => mostrarFeedbackImp(data.ok ? '✓ Prueba enviada a la impresora.' : (data.error || 'Error.'), data.ok))
+      .catch(() => mostrarFeedbackImp('Error de conexión.', false))
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-printer me-1"></i>Imprimir prueba';
+      });
   });
 </script>
 {% endblock %}

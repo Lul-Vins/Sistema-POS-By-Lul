@@ -8,6 +8,8 @@ class Empresa(models.Model):
     telefono = models.CharField(max_length=20, blank=True)
     direccion = models.TextField(blank=True)
     logo = models.ImageField(upload_to='empresa/', blank=True, null=True)
+    imprimir_ticket   = models.BooleanField(default=False)
+    nombre_impresora  = models.CharField(max_length=200, blank=True, default='')
 
     class Meta:
         verbose_name = 'Empresa'

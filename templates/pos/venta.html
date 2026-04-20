@@ -517,13 +517,51 @@
 </div>
 <!-- ══ FIN MODAL COBRO ══════════════════════════════════════════ -->
 
+
+<!-- ══ MODAL POST-COBRO ════════════════════════════════════════ -->
+<div class="modal fade" id="modalPostCobro" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-body text-center px-4 py-4">
+        <div style="font-size:2.8rem; margin-bottom:.5rem;">✅</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#1b4332;" id="pc-titulo">
+          Venta registrada
+        </div>
+        <div style="font-size:1.6rem; font-weight:800; color:#1a1a2e; margin:.4rem 0 .1rem;"
+             id="pc-total-usd"></div>
+        <div style="font-size:1rem; color:#6c757d;" id="pc-total-bs"></div>
+        <div style="font-size:.85rem; color:#6c757d; margin-top:.3rem;" id="pc-venta-id"></div>
+      </div>
+
+      <div class="modal-footer border-0 flex-column gap-2 px-4 pb-4 pt-0">
+        <div id="pc-ticket-status" style="font-size:.85rem; display:none;"></div>
+        <button type="button" id="pc-btn-ticket"
+                class="btn w-100 fw-bold py-2"
+                style="background:#1a1a2e; color:#fff; display:none;">
+          <i class="bi bi-printer me-2"></i>Imprimir ticket manualmente
+        </button>
+        <button type="button" id="pc-btn-nueva"
+                class="btn btn-outline-secondary w-100 fw-semibold py-2">
+          <i class="bi bi-plus-circle me-1"></i>Nueva venta
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL POST-COBRO ════════════════════════════════════ -->
+
 {% endblock %}
 
 
 {% block scripts_extra %}
 <script>
-  let TASA          = parseFloat("{{ tasa|default:'0' }}") || 0;
-  const URL_BUSCAR  = "{% url 'pos:buscar_productos' %}";
+  let TASA              = parseFloat("{{ tasa|default:'0' }}") || 0;
+  const IMPRIMIR_TICKET = {{ imprimir_ticket|yesno:"true,false" }};
+  const URL_TICKET      = "{% url 'pos:ticket' pk=0 %}".replace('/0/', '/');
+  const URL_BUSCAR      = "{% url 'pos:buscar_productos' %}";
   let carrito       = {};
   let timerBusqueda = null;
 
@@ -879,21 +917,48 @@
       });
   });
 
+  const modalPostCobroEl = document.getElementById('modalPostCobro');
+  const modalPostCobro   = new bootstrap.Modal(modalPostCobroEl);
+
   function mostrarConfirmacion(data) {
-    // Toast de éxito temporal
-    const toast = document.createElement('div');
-    toast.style.cssText = `
-      position:fixed; bottom:2rem; left:50%; transform:translateX(-50%);
-      background:#1b4332; color:#fff; padding:1rem 2rem; border-radius:12px;
-      font-weight:700; font-size:1rem; z-index:9999;
-      box-shadow:0 8px 24px rgba(0,0,0,0.2);
-      display:flex; align-items:center; gap:.75rem;
-    `;
-    toast.innerHTML = `<i class="bi bi-check-circle-fill fs-5"></i> Venta #${data.venta_id} registrada — $ ${data.total_usd.toFixed(2)}`;
-    document.body.appendChild(toast);
-    setTimeout(() => toast.remove(), 3500);
-    buscador.focus();
+    document.getElementById('pc-venta-id').textContent  = `Venta #${data.venta_id}`;
+    document.getElementById('pc-total-usd').textContent = `$ ${data.total_usd.toFixed(2)}`;
+    document.getElementById('pc-total-bs').textContent  = `Bs. ${data.total_bs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+
+    const btnTicket    = document.getElementById('pc-btn-ticket');
+    const ticketStatus = document.getElementById('pc-ticket-status');
+
+    if (IMPRIMIR_TICKET) {
+      if (data.ticket_impreso) {
+        ticketStatus.style.display = '';
+        ticketStatus.style.color   = '#2d6a4f';
+        ticketStatus.innerHTML     = '<i class="bi bi-check-circle-fill me-1"></i>Ticket impreso correctamente.';
+        btnTicket.style.display    = 'none';
+      } else {
+        ticketStatus.style.display = '';
+        ticketStatus.style.color   = '#dc3545';
+        ticketStatus.innerHTML     = `<i class="bi bi-exclamation-triangle-fill me-1"></i>No se pudo imprimir: ${data.ticket_error || 'error desconocido'}.`;
+        btnTicket.style.display    = '';
+        const w    = 460, h = 680;
+        const left = Math.round((screen.width  - w) / 2);
+        const top  = Math.round((screen.height - h) / 2);
+        btnTicket.onclick = () => window.open(
+          `${URL_TICKET}${data.venta_id}/`, 'ticket',
+          `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,toolbar=no,menubar=no,location=no`
+        );
+      }
+    } else {
+      ticketStatus.style.display = 'none';
+      btnTicket.style.display    = 'none';
+    }
+
+    modalPostCobro.show();
   }
+
+  document.getElementById('pc-btn-nueva').addEventListener('click', () => {
+    modalPostCobro.hide();
+    buscador.focus();
+  });
 
   // ── Hook global: llamado desde base.html al actualizar tasa ──
   window.onTasaActualizada = function(nuevaTasa) {

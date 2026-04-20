@@ -58,6 +58,79 @@ def configuracion_index(request):
     })
 
 
+def listar_impresoras(request):
+    """Devuelve las impresoras instaladas en Windows."""
+    try:
+        import win32print
+        impresoras = [
+            p[2] for p in
+            win32print.EnumPrinters(
+                win32print.PRINTER_ENUM_LOCAL | win32print.PRINTER_ENUM_CONNECTIONS
+            )
+        ]
+        predeterminada = win32print.GetDefaultPrinter()
+    except Exception:
+        impresoras    = []
+        predeterminada = ''
+    return JsonResponse({'impresoras': impresoras, 'predeterminada': predeterminada})
+
+
+@require_POST
+@csrf_protect
+def guardar_impresora(request):
+    try:
+        body   = json.loads(request.body)
+        nombre = body.get('nombre', '').strip()
+        empresa = Empresa.objects.first()
+        if empresa is None:
+            return JsonResponse({'ok': False, 'error': 'No hay empresa configurada.'}, status=400)
+        empresa.nombre_impresora = nombre
+        empresa.save(update_fields=['nombre_impresora'])
+        return JsonResponse({'ok': True})
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Error interno.'}, status=500)
+
+
+@require_POST
+@csrf_protect
+def test_impresora(request):
+    try:
+        from ventas.printing import imprimir_ticket
+        empresa = Empresa.objects.first()
+        if not empresa or not empresa.nombre_impresora:
+            return JsonResponse({'ok': False, 'error': 'No hay impresora configurada.'}, status=400)
+
+        from escpos.printer import Win32Raw
+        p = Win32Raw(empresa.nombre_impresora)
+        p.set(align='center', bold=True)
+        p.text("--- IMPRESORA LISTA ---\n")
+        p.set(bold=False)
+        p.text(f"{empresa.nombre}\n")
+        p.text("Prueba de impresion OK\n")
+        p.ln(3)
+        p.cut()
+        p.close()
+        return JsonResponse({'ok': True})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=400)
+
+
+@require_POST
+@csrf_protect
+def toggle_impresora(request):
+    try:
+        body    = json.loads(request.body)
+        activado = bool(body.get('activado', False))
+        empresa = Empresa.objects.first()
+        if empresa is None:
+            return JsonResponse({'ok': False, 'error': 'No hay empresa configurada.'}, status=400)
+        empresa.imprimir_ticket = activado
+        empresa.save(update_fields=['imprimir_ticket'])
+        return JsonResponse({'ok': True, 'imprimir_ticket': activado})
+    except Exception:
+        return JsonResponse({'ok': False, 'error': 'Error interno.'}, status=500)
+
+
 @require_POST
 @csrf_protect
 def actualizar_tasa(request):

@@ -16,10 +16,47 @@ def venta(request):
     tasa    = moneda.tasa_cambio if moneda else None
 
     return render(request, 'pos/venta.html', {
-        'tasa':          tasa,
-        'moneda':        moneda,
-        'empresa':       empresa,
-        'metodos_pago':  Venta.METODO_PAGO,
+        'tasa':             tasa,
+        'moneda':           moneda,
+        'empresa':          empresa,
+        'metodos_pago':     Venta.METODO_PAGO,
+        'imprimir_ticket':  empresa.imprimir_ticket if empresa else False,
+    })
+
+
+def ticket(request, pk):
+    venta_obj = get_object_or_404(Venta, pk=pk)
+    empresa   = Empresa.objects.first()
+    tasa      = venta_obj.tasa_aplicada
+
+    detalles_bs = [
+        {
+            'nombre':      d.producto.nombre,
+            'cantidad':    d.cantidad,
+            'precio_bs':   round(d.precio_usd_capturado * tasa, 2),
+            'subtotal_bs': round(d.subtotal_usd * tasa, 2),
+        }
+        for d in venta_obj.detalles.select_related('producto').all()
+    ]
+
+    # Normalizar monto_recibido y vuelto a Bs para mostrar en el ticket
+    monto_recibido_bs = None
+    vuelto_bs         = None
+    if venta_obj.monto_recibido is not None:
+        if venta_obj.metodo_pago == 'EFECTIVO_BS':
+            monto_recibido_bs = venta_obj.monto_recibido
+            vuelto_bs         = venta_obj.vuelto
+        else:
+            monto_recibido_bs = round(venta_obj.monto_recibido * tasa, 2)
+            vuelto_bs         = round(venta_obj.vuelto * tasa, 2) if venta_obj.vuelto else 0
+
+    return render(request, 'pos/ticket.html', {
+        'venta':              venta_obj,
+        'empresa':            empresa,
+        'detalles_bs':        detalles_bs,
+        'tasa':               tasa,
+        'monto_recibido_bs':  monto_recibido_bs,
+        'vuelto_bs':          vuelto_bs,
     })
 
 
@@ -32,6 +69,8 @@ def procesar_venta(request):
         notas          = body.get('notas', '')
         monto_recibido = body.get('monto_recibido')  # None si no es efectivo
         vuelto         = body.get('vuelto')
+
+        empresa = Empresa.objects.first()
 
         if not carrito:
             return JsonResponse({'ok': False, 'error': 'El carrito está vacío.'}, status=400)
@@ -47,11 +86,20 @@ def procesar_venta(request):
 
         venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas, monto_recibido, vuelto)
 
+        # Impresión automática ESC/POS (fallo nunca cancela la venta)
+        ticket_impreso = False
+        ticket_error   = None
+        if empresa and empresa.imprimir_ticket:
+            from .printing import imprimir_ticket
+            ticket_impreso, ticket_error = imprimir_ticket(venta_obj, empresa)
+
         return JsonResponse({
-            'ok':      True,
-            'venta_id': venta_obj.id,
-            'total_usd': float(venta_obj.total_usd),
-            'total_bs':  float(venta_obj.total_bs),
+            'ok':             True,
+            'venta_id':       venta_obj.id,
+            'total_usd':      float(venta_obj.total_usd),
+            'total_bs':       float(venta_obj.total_bs),
+            'ticket_impreso': ticket_impreso,
+            'ticket_error':   ticket_error,
         })
 
     except ValueError as e:
