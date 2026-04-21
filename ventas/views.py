@@ -2,18 +2,27 @@ from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db import transaction
+from django.db.models import Sum, Count
 from django.utils import timezone
 import json
+from datetime import date
 
 from inventario.models import Producto
 from configuracion.models import Empresa, Moneda
 from .models import Venta, DetalleVenta
+from pos_core_lul.decorators import login_required, solo_admin
 
 
+@login_required
 def venta(request):
     moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first()
     tasa    = moneda.tasa_cambio if moneda else None
+
+    tasa_vencida = False
+    if moneda:
+        antigüedad = timezone.now() - moneda.ultima_actualizacion
+        tasa_vencida = antigüedad.total_seconds() > 15 * 3600
 
     return render(request, 'pos/venta.html', {
         'tasa':             tasa,
@@ -21,9 +30,11 @@ def venta(request):
         'empresa':          empresa,
         'metodos_pago':     Venta.METODO_PAGO,
         'imprimir_ticket':  empresa.imprimir_ticket if empresa else False,
+        'tasa_vencida':     tasa_vencida,
     })
 
 
+@login_required
 def ticket(request, pk):
     venta_obj = get_object_or_404(Venta, pk=pk)
     empresa   = Empresa.objects.first()
@@ -60,6 +71,7 @@ def ticket(request, pk):
     })
 
 
+@login_required
 @require_POST
 def procesar_venta(request):
     try:
@@ -84,7 +96,7 @@ def procesar_venta(request):
             producto = get_object_or_404(Producto, pk=item['id'], activo=True)
             items.append({'producto': producto, 'cantidad': int(item['cantidad'])})
 
-        venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas, monto_recibido, vuelto)
+        venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas, monto_recibido, vuelto, vendedor=request.user)
 
         # Impresión automática ESC/POS (fallo nunca cancela la venta)
         ticket_impreso = False
@@ -108,6 +120,7 @@ def procesar_venta(request):
         return JsonResponse({'ok': False, 'error': 'Error interno al procesar la venta.'}, status=500)
 
 
+@login_required
 def buscar_productos(request):
     q = request.GET.get('q', '').strip()
 
@@ -133,7 +146,59 @@ def buscar_productos(request):
             'precio_usd': float(p.precio_usd),
             'precio_bs':  round(precio_bs, 2) if precio_bs else None,
             'imagen':    p.imagen.url if p.imagen else None,
+            'stock_actual': p.stock_actual,
             'stock_bajo': p.stock_bajo,
         })
 
     return JsonResponse({'productos': data})
+
+
+@login_required
+def tasa_estado(request):
+    """Polling endpoint: devuelve si la tasa está vencida y su valor actual."""
+    moneda = Moneda.objects.first()
+    if not moneda:
+        return JsonResponse({'tasa_vencida': True, 'tasa': None, 'ultima_actualizacion': None})
+
+    antigüedad    = timezone.now() - moneda.ultima_actualizacion
+    tasa_vencida  = antigüedad.total_seconds() > 15 * 3600
+
+    return JsonResponse({
+        'tasa_vencida':        tasa_vencida,
+        'tasa':                float(moneda.tasa_cambio),
+        'ultima_actualizacion': moneda.ultima_actualizacion.strftime('%d/%m %H:%M'),
+    })
+
+
+@login_required
+def mis_ventas(request):
+    fecha_str = request.GET.get('fecha', '')
+    try:
+        fecha = date.fromisoformat(fecha_str)
+    except ValueError:
+        fecha = timezone.localdate()
+
+    ventas = (
+        Venta.objects
+        .filter(vendedor=request.user, fecha__date=fecha)
+        .prefetch_related('detalles__producto')
+        .order_by('-fecha')
+    )
+
+    completadas = ventas.filter(estado='COMPLETADA')
+    resumen = completadas.aggregate(
+        total_bs=Sum('total_bs'),
+        cantidad=Count('id'),
+    )
+
+    moneda  = Moneda.objects.first()
+    empresa = Empresa.objects.first()
+
+    return render(request, 'pos/mis_ventas.html', {
+        'ventas':  ventas,
+        'resumen': resumen,
+        'fecha':   fecha,
+        'tasa':    moneda.tasa_cambio if moneda else None,
+        'moneda':  moneda,
+        'empresa': empresa,
+    })

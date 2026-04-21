@@ -154,6 +154,7 @@
             <i class="bi bi-cart3 me-1"></i>Venta
           </a>
         </li>
+        {% if request.user.is_staff %}
         <li class="nav-item">
           <a class="nav-link {% block nav_inventario %}{% endblock %}" href="{% url 'inventario:index' %}">
             <i class="bi bi-box-seam me-1"></i>Inventario
@@ -169,9 +170,22 @@
             <i class="bi bi-gear me-1"></i>Configuración
           </a>
         </li>
+        {% else %}
+        <li class="nav-item">
+          <a class="nav-link {% block nav_mis_ventas %}{% endblock %}" href="{% url 'pos:mis_ventas' %}">
+            <i class="bi bi-receipt me-1"></i>Mis ventas
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link {% block nav_cierre_cajero %}{% endblock %}" href="{% url 'reportes:cierre_cajero' %}">
+            <i class="bi bi-clipboard-check me-1"></i>Cierre
+          </a>
+        </li>
+        {% endif %}
       </ul>
 
-      <!-- Badge de tasa: clickeable para editar -->
+      <!-- Badge de tasa: clickeable para editar (solo admin) -->
+      {% if request.user.is_staff %}
       <button
         class="tasa-badge me-3 {% if not tasa %}sin-tasa{% endif %}"
         id="btn-abrir-tasa"
@@ -185,8 +199,25 @@
         </span>
         <i class="bi bi-pencil-fill"></i>
       </button>
+      {% endif %}
 
-    
+      <!-- Usuario y logout -->
+      {% if request.user.is_authenticated %}
+      <div class="d-flex align-items-center gap-2 me-2">
+        <span class="badge {% if request.user.is_staff %}bg-warning text-dark{% else %}bg-secondary{% endif %} fs-6 px-3 py-2">
+          <i class="bi bi-person-fill me-1"></i>
+          {{ request.user.get_full_name|default:request.user.username }}
+          {% if request.user.is_staff %}<span class="opacity-75 ms-1 small">Admin</span>{% endif %}
+        </span>
+        <form method="post" action="{% url 'logout' %}" class="d-inline m-0">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-outline-light btn-sm" title="Cerrar sesión">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
     </div>
   </nav>
   <!-- ══ FIN NAVBAR ═══════════════════════════════════════════ -->

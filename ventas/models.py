@@ -1,5 +1,6 @@
 from django.db import models
 from django.db import transaction
+from django.contrib.auth.models import User
 from configuracion.models import Moneda
 from inventario.models import Producto
 
@@ -31,6 +32,7 @@ class Venta(models.Model):
     # Solo para pagos en efectivo (USD o Bs según metodo_pago)
     monto_recibido = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
     vuelto = models.DecimalField(max_digits=14, decimal_places=2, null=True, blank=True)
+    vendedor = models.ForeignKey(User, null=True, blank=True, on_delete=models.SET_NULL, related_name='ventas')
 
     class Meta:
         verbose_name = 'Venta'
@@ -41,7 +43,7 @@ class Venta(models.Model):
         return f'Venta #{self.pk} — {self.fecha:%d/%m/%Y %H:%M}'
 
     @classmethod
-    def crear_desde_carrito(cls, carrito, metodo_pago, notas='', monto_recibido=None, vuelto=None):
+    def crear_desde_carrito(cls, carrito, metodo_pago, notas='', monto_recibido=None, vuelto=None, vendedor=None):
         """
         Procesa el carrito completo en una transacción atómica.
 
@@ -82,6 +84,7 @@ class Venta(models.Model):
                 notas=notas,
                 monto_recibido=monto_recibido,
                 vuelto=vuelto,
+                vendedor=vendedor,
             )
 
             # Registrar detalles y descontar inventario

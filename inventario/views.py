@@ -7,8 +7,10 @@ import math
 
 from configuracion.models import Empresa, Moneda
 from .models import Producto, Categoria
+from pos_core_lul.decorators import solo_admin
 
 
+@solo_admin
 def index(request):
     moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first()
@@ -26,6 +28,7 @@ def index(request):
     })
 
 
+@solo_admin
 @require_POST
 def guardar_producto(request):
     """Crea o actualiza un producto. pk=0 significa nuevo."""
@@ -103,6 +106,7 @@ def guardar_producto(request):
         return JsonResponse({'ok': False, 'error': 'Error interno al guardar.'}, status=500)
 
 
+@solo_admin
 @require_POST
 def eliminar_producto(request, pk):
     producto = get_object_or_404(Producto, pk=pk)
@@ -119,6 +123,7 @@ def eliminar_producto(request, pk):
         })
 
 
+@solo_admin
 @require_GET
 def lista_categorias(request):
     cats = list(Categoria.objects.order_by('nombre').values('id', 'nombre'))

@@ -1,0 +1,221 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>{% if sin_usuarios %}Configuración inicial{% else %}Iniciar sesión{% endif %} — {{ empresa.nombre|default:"POS Core" }}</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <style>
+    body {
+      background: #f0f2f5;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-family: 'Segoe UI', system-ui, sans-serif;
+    }
+
+    .login-card {
+      background: #fff;
+      border-radius: 16px;
+      padding: 2.5rem 2rem;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.10);
+      width: 100%;
+      max-width: 380px;
+    }
+
+    .login-logo {
+      text-align: center;
+      margin-bottom: 1.5rem;
+    }
+
+    .login-logo img {
+      max-height: 72px;
+      max-width: 200px;
+      object-fit: contain;
+      margin-bottom: 0.75rem;
+    }
+
+    .login-empresa {
+      font-size: 1.25rem;
+      font-weight: 800;
+      color: #1a1a2e;
+      line-height: 1.2;
+    }
+
+    .login-subtitulo {
+      font-size: 0.85rem;
+      color: #6c757d;
+      margin-top: 3px;
+    }
+
+    .login-titulo {
+      font-size: 1rem;
+      font-weight: 700;
+      color: #1a1a2e;
+      margin-bottom: 1.25rem;
+      padding-bottom: 0.75rem;
+      border-bottom: 2px solid #f0f0f0;
+    }
+
+    .form-label {
+      font-size: .85rem;
+      font-weight: 600;
+      color: #495057;
+      margin-bottom: .35rem;
+    }
+
+    .form-control {
+      border: 1.5px solid #dee2e6;
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      font-size: .95rem;
+      transition: border-color .15s;
+    }
+
+    .form-control:focus {
+      border-color: #2d6a4f;
+      box-shadow: 0 0 0 3px rgba(45,106,79,.12);
+    }
+
+    .btn-login {
+      width: 100%;
+      padding: .7rem;
+      background: #1a1a2e;
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 700;
+      margin-top: .5rem;
+      transition: background .15s;
+    }
+
+    .btn-login:hover { background: #2d3561; color: #fff; }
+
+    .alerta-error {
+      background: #fff3f3;
+      border: 1px solid #f5c2c7;
+      color: #842029;
+      border-radius: 8px;
+      padding: .6rem .85rem;
+      font-size: .88rem;
+      margin-bottom: 1rem;
+      display: flex;
+      align-items: center;
+      gap: .5rem;
+    }
+
+    .badge-setup {
+      display: inline-block;
+      background: #fff3cd;
+      color: #664d03;
+      border: 1px solid #ffda6a;
+      border-radius: 20px;
+      font-size: .75rem;
+      font-weight: 600;
+      padding: 2px 10px;
+      margin-bottom: .75rem;
+    }
+
+    .pie-login {
+      text-align: center;
+      font-size: .75rem;
+      color: #adb5bd;
+      margin-top: 1.5rem;
+    }
+  </style>
+</head>
+<body>
+
+<div class="login-card">
+
+  <!-- Logo y nombre de empresa -->
+  <div class="login-logo">
+    {% if empresa and empresa.logo %}
+      <img src="{{ empresa.logo.url }}" alt="Logo">
+    {% else %}
+      <div style="font-size:2.8rem; margin-bottom:.5rem;">🏪</div>
+    {% endif %}
+    <div class="login-empresa">{{ empresa.nombre|default:"POS Core" }}</div>
+    {% if empresa and empresa.rif %}
+      <div class="login-subtitulo">RIF: {{ empresa.rif }}</div>
+    {% endif %}
+  </div>
+
+  {% if sin_usuarios %}
+  <!-- ── Primer arranque: crear administrador ── -->
+  <div class="badge-setup">⚙ Configuración inicial</div>
+  <div class="login-titulo">Crear administrador principal</div>
+
+  {% if error %}
+  <div class="alerta-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+  {% endif %}
+
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="setup">
+
+    <div class="mb-3">
+      <label class="form-label">Nombre completo</label>
+      <input type="text" name="nombre" class="form-control" placeholder="Ej: María González"
+             value="{{ request.POST.nombre|default:'' }}" autofocus required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Nombre de usuario</label>
+      <input type="text" name="username" class="form-control" placeholder="Ej: admin"
+             value="{{ request.POST.username|default:'' }}" autocomplete="off" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input type="password" name="password" class="form-control"
+             placeholder="Mínimo 4 caracteres" autocomplete="new-password" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Confirmar contraseña</label>
+      <input type="password" name="password2" class="form-control"
+             placeholder="Repite la contraseña" autocomplete="new-password" required>
+    </div>
+
+    <button type="submit" class="btn-login">
+      <i class="bi bi-person-check me-2"></i>Crear y entrar
+    </button>
+  </form>
+
+  {% else %}
+  <!-- ── Login normal ── -->
+  <div class="login-titulo"><i class="bi bi-person-lock me-2"></i>Iniciar sesión</div>
+
+  {% if error %}
+  <div class="alerta-error"><i class="bi bi-exclamation-triangle-fill"></i> {{ error }}</div>
+  {% endif %}
+
+  <form method="post" autocomplete="off">
+    {% csrf_token %}
+    <input type="hidden" name="accion" value="login">
+
+    <div class="mb-3">
+      <label class="form-label">Usuario</label>
+      <input type="text" name="username" class="form-control"
+             placeholder="Nombre de usuario"
+             value="{{ request.POST.username|default:'' }}"
+             autofocus autocomplete="username" required>
+    </div>
+    <div class="mb-3">
+      <label class="form-label">Contraseña</label>
+      <input type="password" name="password" class="form-control"
+             placeholder="Contraseña" autocomplete="current-password" required>
+    </div>
+
+    <button type="submit" class="btn-login">
+      <i class="bi bi-box-arrow-in-right me-2"></i>Entrar
+    </button>
+  </form>
+  {% endif %}
+
+  <div class="pie-login">{{ empresa.nombre|default:"POS Core" }} — Sistema de Punto de Venta</div>
+</div>
+
+</body>
+</html>

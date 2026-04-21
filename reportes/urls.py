@@ -9,4 +9,5 @@ urlpatterns = [
     path('cierre/', views.cierre_caja, name='cierre_caja'),
     path('guardar-cierre/', views.guardar_cierre, name='guardar_cierre'),
     path('cierre/imprimir/', views.imprimir_cierre, name='imprimir_cierre'),
+    path('cierre/cajero/', views.cierre_cajero, name='cierre_cajero'),
 ]

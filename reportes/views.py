@@ -3,14 +3,17 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.db.models import Sum, Count, Q
 from django.utils import timezone
+from pos_core_lul.decorators import login_required
 import json
 from datetime import date
 
 from ventas.models import Venta, DetalleVenta
 from configuracion.models import Empresa, Moneda
 from .models import CierreCaja
+from pos_core_lul.decorators import solo_admin
 
 
+@solo_admin
 def index(request):
     fecha_str = request.GET.get('fecha', '')
     try:
@@ -45,6 +48,7 @@ def index(request):
     })
 
 
+@solo_admin
 @require_POST
 def anular_venta(request, pk):
     venta = get_object_or_404(Venta, pk=pk)
@@ -63,6 +67,7 @@ def anular_venta(request, pk):
     return JsonResponse({'ok': True})
 
 
+@solo_admin
 def cierre_caja(request):
     """Obtiene totales por método de pago del día para el cierre de caja."""
     fecha_str = request.GET.get('fecha', '')
@@ -124,6 +129,7 @@ def cierre_caja(request):
     })
 
 
+@solo_admin
 def imprimir_cierre(request):
     fecha_str = request.GET.get('fecha', '')
     try:
@@ -175,6 +181,7 @@ def imprimir_cierre(request):
     })
 
 
+@solo_admin
 @require_POST
 def guardar_cierre(request):
     """Guarda un cierre de caja con desglose por método de pago."""
@@ -224,3 +231,50 @@ def guardar_cierre(request):
         return JsonResponse({'ok': False, 'error': str(e)}, status=400)
     except Exception as e:
         return JsonResponse({'ok': False, 'error': 'Error interno al guardar.'}, status=500)
+
+
+@login_required
+def cierre_cajero(request):
+    """Cierre de turno personal: solo las ventas del usuario autenticado."""
+    fecha_str = request.GET.get('fecha', '')
+    try:
+        fecha = date.fromisoformat(fecha_str)
+    except ValueError:
+        fecha = timezone.localtime().date()
+
+    ventas_dia = (
+        Venta.objects
+        .filter(vendedor=request.user, fecha__date=fecha, estado='COMPLETADA')
+        .prefetch_related('detalles__producto')
+        .order_by('-fecha')
+    )
+
+    resumen_metodos = []
+    for codigo_metodo, nombre_metodo in Venta.METODO_PAGO:
+        ventas_metodo = [v for v in ventas_dia if v.metodo_pago == codigo_metodo]
+        if not ventas_metodo:
+            continue
+        total_bs = sum(float(v.total_bs) for v in ventas_metodo)
+        resumen_metodos.append({
+            'nombre':   nombre_metodo,
+            'codigo':   codigo_metodo,
+            'total_bs': total_bs,
+            'cantidad': len(ventas_metodo),
+            'ventas':   ventas_metodo,
+        })
+
+    total_general_bs = sum(m['total_bs'] for m in resumen_metodos)
+    total_ventas     = sum(m['cantidad'] for m in resumen_metodos)
+
+    moneda  = Moneda.objects.first()
+    empresa = Empresa.objects.first()
+
+    return render(request, 'reportes/cierre_cajero.html', {
+        'fecha':             fecha,
+        'resumen_metodos':   resumen_metodos,
+        'total_general_bs':  total_general_bs,
+        'total_ventas':      total_ventas,
+        'moneda':            moneda,
+        'empresa':           empresa,
+        'tasa':              moneda.tasa_cambio if moneda else None,
+    })

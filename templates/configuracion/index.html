@@ -265,6 +265,21 @@
     <div id="ticket-feedback" style="font-size:.82rem; min-height:1.1rem; margin-top:.75rem;"></div>
   </div>
 
+  <!-- ── Usuarios ────────────────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-people-fill"></i> Usuarios del sistema
+    </div>
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="text-muted" style="font-size:.9rem;">
+        Administra quién puede acceder al POS y con qué rol.
+      </div>
+      <a href="{% url 'configuracion:usuarios' %}" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-people me-1"></i>Gestionar usuarios
+      </a>
+    </div>
+  </div>
+
   <!-- ── Tasa de cambio ──────────────────────────────────── -->
   <div class="config-card">
     <div class="config-section-title">

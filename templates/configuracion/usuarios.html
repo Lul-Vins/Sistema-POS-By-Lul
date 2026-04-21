@@ -1,0 +1,299 @@
+{% extends "base.html" %}
+
+{% block titulo %}Usuarios{% endblock %}
+{% block nav_config %}active{% endblock %}
+
+{% block estilos_extra %}
+<style>
+  .usuarios-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+  }
+  .rol-admin  { background-color: #fff3cd; color: #664d03; }
+  .rol-cajero { background-color: #e2e3e5; color: #41464b; }
+  .badge-inactivo { background-color: #f8d7da; color: #842029; }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div class="container" style="max-width:860px;">
+
+  <div class="d-flex align-items-center justify-content-between mb-4">
+    <div>
+      <h3 class="fw-bold mb-0"><i class="bi bi-people-fill me-2"></i>Usuarios</h3>
+      <small class="text-muted">Administra quién puede acceder al sistema</small>
+    </div>
+    <div class="d-flex gap-2">
+      <a href="{% url 'configuracion:index' %}" class="btn btn-outline-secondary btn-sm">
+        <i class="bi bi-arrow-left me-1"></i>Volver
+      </a>
+      <button class="btn btn-success btn-sm" id="btn-nuevo-usuario">
+        <i class="bi bi-person-plus-fill me-1"></i>Nuevo usuario
+      </button>
+    </div>
+  </div>
+
+  <div class="usuarios-card">
+    <table class="table table-hover align-middle mb-0">
+      <thead class="table-dark">
+        <tr>
+          <th>Nombre</th>
+          <th>Usuario</th>
+          <th>Rol</th>
+          <th>Estado</th>
+          <th class="text-end">Acciones</th>
+        </tr>
+      </thead>
+      <tbody id="tabla-usuarios">
+        {% for u in usuarios %}
+        <tr id="fila-{{ u.id }}">
+          <td class="fw-semibold">{{ u.get_full_name|default:u.username }}</td>
+          <td class="text-muted">{{ u.username }}</td>
+          <td>
+            <span class="badge rounded-pill {% if u.is_staff %}rol-admin{% else %}rol-cajero{% endif %}">
+              {% if u.is_staff %}Admin{% else %}Cajero{% endif %}
+            </span>
+          </td>
+          <td>
+            {% if u.is_active %}
+              <span class="badge bg-success-subtle text-success">Activo</span>
+            {% else %}
+              <span class="badge badge-inactivo">Inactivo</span>
+            {% endif %}
+          </td>
+          <td class="text-end">
+            <button class="btn btn-outline-primary btn-sm" onclick="abrirEditar({{ u.id }}, '{{ u.get_full_name|default:u.username }}', '{{ u.username }}', {{ u.is_staff|yesno:'true,false' }}, {{ u.is_active|yesno:'true,false' }})">
+              <i class="bi bi-pencil-fill"></i>
+            </button>
+          </td>
+        </tr>
+        {% empty %}
+        <tr><td colspan="5" class="text-center text-muted py-4">No hay usuarios registrados.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+</div>
+
+
+<!-- ── Modal crear/editar usuario ─────────────────────────── -->
+<div class="modal fade" id="modalUsuario" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered">
+    <div class="modal-content">
+
+      <div class="modal-header" style="background:#1a1a2e; color:#fff;">
+        <h5 class="modal-title" id="modal-usuario-titulo">
+          <i class="bi bi-person-fill me-2"></i>Nuevo usuario
+        </h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body">
+        <input type="hidden" id="edit-pk" value="0">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre completo</label>
+          <input type="text" id="edit-nombre" class="form-control" placeholder="Ej: María González">
+        </div>
+
+        <div class="mb-3" id="campo-username-wrapper">
+          <label class="form-label fw-semibold">Nombre de usuario</label>
+          <input type="text" id="edit-username" class="form-control" placeholder="Ej: maria (sin espacios)">
+          <div class="form-text">Solo letras, números y guión bajo. Sin espacios.</div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Contraseña <span id="lbl-pass-opcional" class="text-muted small fw-normal">(opcional al editar)</span></label>
+          <div class="input-group">
+            <input type="password" id="edit-password" class="form-control" placeholder="Mínimo 4 caracteres">
+            <button class="btn btn-outline-secondary" type="button" id="btn-toggle-pass">
+              <i class="bi bi-eye"></i>
+            </button>
+          </div>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Rol</label>
+          <div class="d-flex gap-3">
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="edit-rol" id="rol-cajero" value="cajero" checked>
+              <label class="form-check-label" for="rol-cajero">
+                <span class="badge rol-cajero rounded-pill me-1">Cajero</span>
+                Solo puede hacer ventas
+              </label>
+            </div>
+            <div class="form-check">
+              <input class="form-check-input" type="radio" name="edit-rol" id="rol-admin-radio" value="admin">
+              <label class="form-check-label" for="rol-admin-radio">
+                <span class="badge rol-admin rounded-pill me-1">Admin</span>
+                Acceso completo
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <div class="mb-2" id="campo-activo-wrapper">
+          <div class="form-check form-switch">
+            <input class="form-check-input" type="checkbox" id="edit-activo" checked>
+            <label class="form-check-label" for="edit-activo">Usuario activo</label>
+          </div>
+        </div>
+
+        <div class="alert alert-danger d-none py-2" id="usuario-error"></div>
+      </div>
+
+      <div class="modal-footer border-0">
+        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="btn btn-success" id="btn-guardar-usuario">
+          <i class="bi bi-check-lg me-1"></i>Guardar
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts_extra %}
+<script>
+const CSRF = "{{ csrf_token }}";
+const URL_CREAR  = "{% url 'configuracion:crear_usuario' %}";
+const URL_EDITAR = "{% url 'configuracion:editar_usuario' pk=9999 %}".replace('9999', '{pk}');
+
+const modal       = new bootstrap.Modal(document.getElementById('modalUsuario'));
+const inputPass   = document.getElementById('edit-password');
+const btnToggle   = document.getElementById('btn-toggle-pass');
+
+btnToggle.addEventListener('click', () => {
+  const visible = inputPass.type === 'text';
+  inputPass.type = visible ? 'password' : 'text';
+  btnToggle.innerHTML = visible ? '<i class="bi bi-eye"></i>' : '<i class="bi bi-eye-slash"></i>';
+});
+
+// ── Abrir modal nuevo ──────────────────────────────────────
+document.getElementById('btn-nuevo-usuario').addEventListener('click', () => {
+  document.getElementById('modal-usuario-titulo').innerHTML = '<i class="bi bi-person-plus-fill me-2"></i>Nuevo usuario';
+  document.getElementById('edit-pk').value       = '0';
+  document.getElementById('edit-nombre').value   = '';
+  document.getElementById('edit-username').value = '';
+  document.getElementById('edit-password').value = '';
+  document.getElementById('campo-username-wrapper').classList.remove('d-none');
+  document.getElementById('lbl-pass-opcional').classList.add('d-none');
+  document.getElementById('campo-activo-wrapper').classList.add('d-none');
+  document.querySelector('#rol-cajero').checked = true;
+  document.getElementById('edit-activo').checked = true;
+  document.getElementById('usuario-error').classList.add('d-none');
+  modal.show();
+});
+
+// ── Abrir modal editar ─────────────────────────────────────
+function abrirEditar(pk, nombre, username, esAdmin, activo) {
+  document.getElementById('modal-usuario-titulo').innerHTML = '<i class="bi bi-pencil-fill me-2"></i>Editar usuario';
+  document.getElementById('edit-pk').value       = pk;
+  document.getElementById('edit-nombre').value   = nombre;
+  document.getElementById('edit-username').value = username;
+  document.getElementById('edit-password').value = '';
+  document.getElementById('campo-username-wrapper').classList.add('d-none');
+  document.getElementById('lbl-pass-opcional').classList.remove('d-none');
+  document.getElementById('campo-activo-wrapper').classList.remove('d-none');
+  document.querySelector(esAdmin ? '#rol-admin-radio' : '#rol-cajero').checked = true;
+  document.getElementById('edit-activo').checked = activo;
+  document.getElementById('usuario-error').classList.add('d-none');
+  modal.show();
+}
+
+// ── Guardar ────────────────────────────────────────────────
+document.getElementById('btn-guardar-usuario').addEventListener('click', async () => {
+  const pk       = parseInt(document.getElementById('edit-pk').value);
+  const nombre   = document.getElementById('edit-nombre').value.trim();
+  const username = document.getElementById('edit-username').value.trim();
+  const password = document.getElementById('edit-password').value.trim();
+  const esAdmin  = document.querySelector('input[name="edit-rol"]:checked').value === 'admin';
+  const activo   = document.getElementById('edit-activo').checked;
+  const errDiv   = document.getElementById('usuario-error');
+
+  if (!nombre) { mostrarError('El nombre es obligatorio.'); return; }
+  if (pk === 0 && !username) { mostrarError('El nombre de usuario es obligatorio.'); return; }
+  if (pk === 0 && !password) { mostrarError('La contraseña es obligatoria al crear un usuario.'); return; }
+
+  const btn = document.getElementById('btn-guardar-usuario');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+  const url  = pk === 0 ? URL_CREAR : URL_EDITAR.replace('{pk}', pk);
+  const body = pk === 0
+    ? { nombre, username, password, es_admin: esAdmin }
+    : { nombre, password, es_admin: esAdmin, activo };
+
+  try {
+    const resp = await fetch(url, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify(body),
+    });
+    const data = await resp.json();
+
+    if (data.ok) {
+      modal.hide();
+      actualizarFila(data, pk === 0);
+    } else {
+      mostrarError(data.error || 'Error al guardar.');
+    }
+  } catch {
+    mostrarError('Error de conexión.');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar';
+  }
+});
+
+function mostrarError(msg) {
+  const div = document.getElementById('usuario-error');
+  div.textContent = msg;
+  div.classList.remove('d-none');
+}
+
+function actualizarFila(data, esNuevo) {
+  const rolLabel   = data.es_admin ? 'Admin'  : 'Cajero';
+  const rolClase   = data.es_admin ? 'rol-admin' : 'rol-cajero';
+  const estadoHtml = data.activo
+    ? '<span class="badge bg-success-subtle text-success">Activo</span>'
+    : '<span class="badge badge-inactivo">Inactivo</span>';
+
+  const nombre    = escHtml(data.nombre);
+  const username  = escHtml(data.username);
+  const filaHtml  = `
+    <td class="fw-semibold">${nombre}</td>
+    <td class="text-muted">${username}</td>
+    <td><span class="badge rounded-pill ${rolClase}">${rolLabel}</span></td>
+    <td>${estadoHtml}</td>
+    <td class="text-end">
+      <button class="btn btn-outline-primary btn-sm"
+        onclick="abrirEditar(${data.id}, '${nombre}', '${username}', ${data.es_admin}, ${data.activo})">
+        <i class="bi bi-pencil-fill"></i>
+      </button>
+    </td>`;
+
+  if (esNuevo) {
+    const tbody  = document.getElementById('tabla-usuarios');
+    const empty  = tbody.querySelector('[colspan]');
+    if (empty) empty.closest('tr').remove();
+    const tr = document.createElement('tr');
+    tr.id = `fila-${data.id}`;
+    tr.innerHTML = filaHtml;
+    tbody.appendChild(tr);
+  } else {
+    const fila = document.getElementById(`fila-${data.id}`);
+    if (fila) fila.innerHTML = filaHtml;
+  }
+}
+
+function escHtml(str) {
+  return String(str).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+</script>
+{% endblock %}

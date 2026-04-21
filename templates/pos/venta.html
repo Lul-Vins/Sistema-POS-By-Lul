@@ -126,17 +126,27 @@
     overflow: hidden;
   }
 
-  .producto-card .precio-usd {
+  .producto-card .precio-bs {
     font-size: 0.95rem;
     font-weight: 800;
     color: #2d6a4f;
     margin-top: 3px;
   }
 
-  .producto-card .precio-bs {
+  .producto-card .precio-usd {
     font-size: 0.72rem;
     color: #6c757d;
   }
+
+  .producto-card .stock-info {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    margin-top: 4px;
+    font-size: 0.72rem;
+    color: #6c757d;
+  }
+  .producto-card .stock-info.bajo { color: #856404; }
 
   .badge-stock-bajo {
     font-size: 0.6rem;
@@ -368,6 +378,29 @@
 
     <!-- Buscador sticky -->
     <div class="buscador-wrap">
+
+      {% if not request.user.is_staff %}
+      <!-- Tasa informativa para cajeros -->
+      <div class="d-flex align-items-center justify-content-end gap-2 mb-2" style="font-size:.82rem;">
+        {% if tasa_vencida %}
+          <span id="badge-tasa-cajero" class="badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1">
+            <i class="bi bi-exclamation-triangle-fill me-1"></i>Tasa vencida
+          </span>
+        {% elif tasa %}
+          <span id="badge-tasa-cajero" class="badge bg-success-subtle text-success border border-success-subtle px-2 py-1">
+            <i class="bi bi-currency-dollar me-1"></i>Tasa BCV: Bs. {{ tasa }}
+          </span>
+          {% if moneda %}
+          <span id="badge-ultima-act" class="text-muted">Actualizada: {{ moneda.ultima_actualizacion|date:"d/m H:i" }}</span>
+          {% endif %}
+        {% else %}
+          <span id="badge-tasa-cajero" class="badge bg-secondary-subtle text-secondary border px-2 py-1">
+            <i class="bi bi-slash-circle me-1"></i>Sin tasa configurada
+          </span>
+        {% endif %}
+      </div>
+      {% endif %}
+
       <div class="input-group">
         <span class="input-group-text bg-white border-0 ps-3">
           <i class="bi bi-search text-muted fs-5"></i>
@@ -440,8 +473,20 @@
         <span class="valor-bs" id="total-bs">Bs. 0,00</span>
       </div>
 
-      <button class="btn-cobrar" id="btn-cobrar" disabled onclick="abrirModalCobro()">
-        <i class="bi bi-cash-coin me-2"></i>Cobrar
+      <div id="alerta-tasa-vencida"
+           class="alert alert-danger py-2 px-3 mb-2 d-flex align-items-start gap-2"
+           style="font-size:.82rem; border-radius:8px; {% if not tasa_vencida %}display:none!important;{% endif %}">
+        <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+        <div>
+          <strong>Tasa BCV desactualizada.</strong><br>
+          El sistema no puede procesar ventas hasta que el administrador actualice la tasa del día.
+        </div>
+      </div>
+      <button class="btn-cobrar" id="btn-cobrar"
+              {% if tasa_vencida %}disabled style="opacity:.4; cursor:not-allowed;"{% else %}disabled{% endif %}
+              onclick="abrirModalCobro()">
+        <i class="bi bi-cash-coin me-2"></i>
+        {% if tasa_vencida %}<i class="bi bi-lock me-2"></i>Tasa vencida{% else %}Cobrar{% endif %}
       </button>
       <button class="btn-vaciar" id="btn-vaciar" onclick="vaciarCarrito()">
         <i class="bi bi-trash me-1"></i>Vaciar carrito
@@ -560,6 +605,7 @@
 <script>
   let TASA              = parseFloat("{{ tasa|default:'0' }}") || 0;
   const IMPRIMIR_TICKET = {{ imprimir_ticket|yesno:"true,false" }};
+  const TASA_VENCIDA    = {{ tasa_vencida|yesno:"true,false" }};
   const URL_TICKET      = "{% url 'pos:ticket' pk=0 %}".replace('/0/', '/');
   const URL_BUSCAR      = "{% url 'pos:buscar_productos' %}";
   let carrito       = {};
@@ -642,9 +688,11 @@
       ? `Bs. ${p.precio_bs.toFixed(2)}`
       : `Bs. —`;
 
-    const stockHtml = p.stock_bajo
-      ? `<span class="badge badge-stock-bajo"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock bajo</span>`
-      : '';
+    const stockIcono = p.stock_bajo ? 'bi-exclamation-triangle-fill' : 'bi-box-seam';
+    const stockClase = p.stock_bajo ? 'bajo' : '';
+    const stockHtml  = `<div class="stock-info ${stockClase}">
+      <i class="bi ${stockIcono}"></i> Stock: ${p.stock_actual}
+    </div>`;
 
     col.innerHTML = `
       <div class="card producto-card"
@@ -654,8 +702,8 @@
         <div class="card-img-wrap">${imgHtml}</div>
         <div class="card-body">
           <div class="nombre">${p.nombre}</div>
-          <div class="precio-usd">$ ${p.precio_usd.toFixed(2)}</div>
           <div class="precio-bs">${bsHtml}</div>
+          <div class="precio-usd">$ ${p.precio_usd.toFixed(2)}</div>
           ${stockHtml}
         </div>
       </div>`;
@@ -717,7 +765,7 @@
     }
 
     vacio.style.display = 'none';
-    btnCobrar.disabled  = false;
+    btnCobrar.disabled  = TASA_VENCIDA;
 
     let totalUsd = 0, totalItems = 0;
 
@@ -979,5 +1027,55 @@
 
   // Estado inicial al cargar
   mostrarEstado('inicial');
+
+  // ── Polling de tasa BCV (cada 60 s) ───────────────────────
+  const URL_TASA_ESTADO = "{% url 'pos:tasa_estado' %}";
+  let tasaVencida = TASA_VENCIDA;
+
+  function aplicarEstadoTasa(vencida, tasa, ultimaAct) {
+    if (vencida === tasaVencida && (!tasa || tasa === TASA)) return; // sin cambios
+
+    tasaVencida = vencida;
+    if (tasa) {
+      TASA = tasa;
+      window.onTasaActualizada(tasa); // recalcula tarjetas y carrito
+    }
+
+    const alerta    = document.getElementById('alerta-tasa-vencida');
+    const btnCobrar = document.getElementById('btn-cobrar');
+    const badgeTasa = document.getElementById('badge-tasa-cajero');
+
+    if (alerta) alerta.style.display = vencida ? '' : 'none';
+
+    if (btnCobrar) {
+      if (vencida) {
+        btnCobrar.disabled = true;
+        btnCobrar.innerHTML = '<i class="bi bi-lock me-2"></i>Tasa vencida';
+      } else {
+        const hayItems = Object.keys(carrito).length > 0;
+        btnCobrar.disabled  = !hayItems;
+        btnCobrar.innerHTML = '<i class="bi bi-cash-coin me-2"></i>Cobrar';
+      }
+    }
+
+    if (badgeTasa) {
+      if (vencida) {
+        badgeTasa.className = 'badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1';
+        badgeTasa.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Tasa vencida';
+      } else if (tasa) {
+        badgeTasa.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+        badgeTasa.innerHTML = `<i class="bi bi-currency-dollar me-1"></i>Tasa BCV: Bs. ${tasa.toFixed(2)}`;
+      }
+      const spanUltAct = document.getElementById('badge-ultima-act');
+      if (spanUltAct && ultimaAct) spanUltAct.textContent = `Actualizada: ${ultimaAct}`;
+    }
+  }
+
+  setInterval(() => {
+    fetch(URL_TASA_ESTADO)
+      .then(r => r.json())
+      .then(d => aplicarEstadoTasa(d.tasa_vencida, d.tasa, d.ultima_actualizacion))
+      .catch(() => {}); // silencioso si falla la red
+  }, 60_000);
 </script>
 {% endblock %}
