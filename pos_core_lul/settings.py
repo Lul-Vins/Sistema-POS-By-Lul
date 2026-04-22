@@ -79,7 +79,7 @@ AUTH_PASSWORD_VALIDATORS = []
 # --- Auth ---
 
 LOGIN_URL = '/login/'
-LOGIN_REDIRECT_URL = '/ventas/'
+LOGIN_REDIRECT_URL = '/'
 
 
 # --- Internacionalización ---

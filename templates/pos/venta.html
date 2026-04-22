@@ -485,8 +485,11 @@
       <button class="btn-cobrar" id="btn-cobrar"
               {% if tasa_vencida %}disabled style="opacity:.4; cursor:not-allowed;"{% else %}disabled{% endif %}
               onclick="abrirModalCobro()">
-        <i class="bi bi-cash-coin me-2"></i>
-        {% if tasa_vencida %}<i class="bi bi-lock me-2"></i>Tasa vencida{% else %}Cobrar{% endif %}
+        {% if tasa_vencida %}
+        <i class="bi bi-lock me-2"></i>Tasa vencida
+        {% else %}
+        <i class="bi bi-cash-coin me-2"></i>Cobrar
+        {% endif %}
       </button>
       <button class="btn-vaciar" id="btn-vaciar" onclick="vaciarCarrito()">
         <i class="bi bi-trash me-1"></i>Vaciar carrito
