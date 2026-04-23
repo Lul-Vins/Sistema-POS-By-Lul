@@ -13,4 +13,5 @@ urlpatterns = [
     path('usuarios/',            views.usuarios_index,    name='usuarios'),
     path('usuarios/crear/',      views.crear_usuario,     name='crear_usuario'),
     path('usuarios/<int:pk>/editar/', views.editar_usuario, name='editar_usuario'),
+    path('backup/',              views.backup_db,          name='backup_db'),
 ]

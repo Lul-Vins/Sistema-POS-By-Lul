@@ -4,7 +4,11 @@ from django.contrib.auth.models import User
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
 from django.views.decorators.csrf import csrf_protect
+from django.conf import settings
 import json
+import shutil
+from pathlib import Path
+from datetime import datetime
 from .models import Empresa, Moneda
 from pos_core_lul.decorators import solo_admin, login_required
 
@@ -164,6 +168,32 @@ def actualizar_tasa(request):
 
     except (ValueError, json.JSONDecodeError):
         return JsonResponse({'ok': False, 'error': 'Valor inválido.'}, status=400)
+
+
+# ── Backup ───────────────────────────────────────────────────────
+
+@solo_admin
+@require_POST
+def backup_db(request):
+    """Copia db.sqlite3 al Escritorio del usuario con marca de tiempo."""
+    try:
+        origen  = Path(settings.BASE_DIR) / 'db.sqlite3'
+        desktop = Path.home() / 'Desktop'
+
+        if not origen.exists():
+            return JsonResponse({'ok': False, 'error': 'No se encontró la base de datos.'}, status=400)
+        if not desktop.exists():
+            return JsonResponse({'ok': False, 'error': f'No se encontró el Escritorio en {desktop}.'}, status=400)
+
+        timestamp = datetime.now().strftime('%Y%m%d_%H%M')
+        destino   = desktop / f'pos_backup_{timestamp}.sqlite3'
+
+        shutil.copy2(origen, destino)
+
+        return JsonResponse({'ok': True, 'ruta': str(destino)})
+
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
 
 
 # ── Gestión de usuarios ───────────────────────────────────────────

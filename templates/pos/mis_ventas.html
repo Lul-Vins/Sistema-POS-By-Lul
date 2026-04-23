@@ -79,7 +79,7 @@
       <tbody>
         {% for v in ventas %}
         <tr class="venta-row" data-bs-toggle="collapse" data-bs-target="#det-{{ v.id }}">
-          <td class="fw-semibold text-muted">#{{ v.id }}</td>
+          <td class="fw-semibold text-muted">{{ v.numero_fmt }}</td>
           <td>{{ v.fecha|date:"H:i" }}</td>
           <td>{{ v.get_metodo_pago_display }}</td>
           <td class="text-end fw-semibold">{{ v.total_bs|floatformat:2 }}</td>

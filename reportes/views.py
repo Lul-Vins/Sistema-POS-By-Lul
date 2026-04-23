@@ -160,24 +160,32 @@ def imprimir_cierre(request):
             'ventas':    ventas_metodo,
         })
 
-    total_general_usd = sum(m['total_usd'] for m in resumen_metodos)
-    total_general_bs  = sum(m['total_bs']  for m in resumen_metodos)
-    total_ventas      = sum(m['cantidad']  for m in resumen_metodos)
+    total_general_usd     = sum(m['total_usd'] for m in resumen_metodos)
+    total_general_bs      = sum(m['total_bs']  for m in resumen_metodos)
+    total_ventas          = sum(m['cantidad']  for m in resumen_metodos)
+
+    # Totales fiscales del día (SENIAT)
+    total_base_imponible_bs = sum(float(v.base_imponible_bs) for v in ventas_dia)
+    total_iva_bs            = sum(float(v.iva_bs)            for v in ventas_dia)
+    total_monto_exento_bs   = sum(float(v.monto_exento_bs)   for v in ventas_dia)
 
     moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first()
     cierre  = CierreCaja.objects.filter(fecha=fecha).first()
 
     return render(request, 'reportes/cierre_caja_print.html', {
-        'fecha':             fecha,
-        'resumen_metodos':   resumen_metodos,
-        'total_general_usd': total_general_usd,
-        'total_general_bs':  total_general_bs,
-        'total_ventas':      total_ventas,
-        'moneda':            moneda,
-        'empresa':           empresa,
-        'tasa':              moneda.tasa_cambio if moneda else None,
-        'cierre':            cierre,
+        'fecha':                  fecha,
+        'resumen_metodos':        resumen_metodos,
+        'total_general_usd':      total_general_usd,
+        'total_general_bs':       total_general_bs,
+        'total_ventas':           total_ventas,
+        'total_base_imponible_bs': total_base_imponible_bs,
+        'total_iva_bs':           total_iva_bs,
+        'total_monto_exento_bs':  total_monto_exento_bs,
+        'moneda':                 moneda,
+        'empresa':                empresa,
+        'tasa':                   moneda.tasa_cambio if moneda else None,
+        'cierre':                 cierre,
     })
 
 

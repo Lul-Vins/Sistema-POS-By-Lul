@@ -6,7 +6,7 @@ import json
 
 from configuracion.models import Moneda, Empresa
 from inventario.models import Producto, Categoria
-from .models import Venta, DetalleVenta
+from .models import Venta, DetalleVenta, ContadorFactura
 
 
 # ── Fixture compartido ─────────────────────────────────────────────
@@ -249,7 +249,6 @@ class TasaEstadoTests(TestCase):
         self.assertEqual(data['tasa'], 50.0)
 
     def test_tasa_vencida_cuando_supera_15h(self):
-        # auto_now no se puede asignar directamente; update() lo salta
         momento_viejo = timezone.now() - timezone.timedelta(hours=16)
         Moneda.objects.filter(pk=self.moneda.pk).update(ultima_actualizacion=momento_viejo)
 
@@ -271,6 +270,67 @@ class TasaEstadoTests(TestCase):
         data = r.json()
         self.assertTrue(data['tasa_vencida'])
         self.assertIsNone(data['tasa'])
+
+
+# ══════════════════════════════════════════════════════════════════
+# Número correlativo de factura (SENIAT)
+# ══════════════════════════════════════════════════════════════════
+
+class NumeroCorrelativoTests(TestCase):
+
+    def setUp(self):
+        self.moneda, _, self.prod, self.admin, _ = crear_escenario_base()
+
+    def _venta(self):
+        return Venta.crear_desde_carrito(
+            [{'producto': self.prod, 'cantidad': 1}], 'EFECTIVO_BS'
+        )
+
+    def test_primera_venta_tiene_numero_1(self):
+        venta = self._venta()
+        self.assertEqual(venta.numero_factura, 1)
+
+    def test_segunda_venta_tiene_numero_2(self):
+        self._venta()
+        venta2 = self._venta()
+        self.assertEqual(venta2.numero_factura, 2)
+
+    def test_numeros_son_consecutivos(self):
+        ventas = [self._venta() for _ in range(5)]
+        numeros = [v.numero_factura for v in ventas]
+        self.assertEqual(numeros, [1, 2, 3, 4, 5])
+
+    def test_formato_ocho_digitos(self):
+        venta = self._venta()
+        self.assertEqual(venta.numero_fmt, '00000001')
+
+    def test_formato_con_numero_alto(self):
+        ContadorFactura.objects.create(ultimo_numero=999)
+        venta = self._venta()
+        self.assertEqual(venta.numero_fmt, '00001000')
+
+    def test_numero_factura_es_unico(self):
+        v1 = self._venta()
+        v2 = self._venta()
+        self.assertNotEqual(v1.numero_factura, v2.numero_factura)
+
+    def test_rollback_no_consume_numero(self):
+        """Si la venta falla (stock insuficiente), el número no se asigna."""
+        try:
+            Venta.crear_desde_carrito(
+                [{'producto': self.prod, 'cantidad': 999}], 'EFECTIVO_BS'
+            )
+        except ValueError:
+            pass
+        # El contador no debe haber avanzado
+        contador = ContadorFactura.objects.first()
+        self.assertIsNone(contador)  # nunca se creó porque el rollback lo revirtió
+
+    def test_numero_fmt_sin_numero_factura(self):
+        """Ventas antiguas sin numero_factura muestran #pk como fallback."""
+        venta = self._venta()
+        venta.numero_factura = None
+        self.assertIn('#', venta.numero_fmt)
 
 
 # ══════════════════════════════════════════════════════════════════

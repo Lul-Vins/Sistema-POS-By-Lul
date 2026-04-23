@@ -377,7 +377,7 @@
         <tbody>
           {% for venta in metodo.ventas %}
           <tr>
-            <td>{{ venta.pk }}</td>
+            <td>{{ venta.numero_fmt }}</td>
             <td>{{ venta.fecha|date:"H:i" }}</td>
             <td class="productos-celda">
               {% for d in venta.detalles.all %}
@@ -417,6 +417,23 @@
         <span class="tl">Total en Bolívares</span>
         <span class="tv-bs">Bs. {{ total_general_bs|floatformat:2 }}</span>
       </div>
+
+      <!-- Desglose fiscal SENIAT -->
+      {% if total_monto_exento_bs %}
+      <div class="total-item">
+        <span class="tl">Monto Exento</span>
+        <span class="tv" style="color:#555;">Bs. {{ total_monto_exento_bs|floatformat:2 }}</span>
+      </div>
+      {% endif %}
+      <div class="total-item">
+        <span class="tl">Base Imponible</span>
+        <span class="tv" style="color:#555;">Bs. {{ total_base_imponible_bs|floatformat:2 }}</span>
+      </div>
+      <div class="total-item">
+        <span class="tl">Monto IVA</span>
+        <span class="tv" style="color:#555;">Bs. {{ total_iva_bs|floatformat:2 }}</span>
+      </div>
+
       {% if tasa %}
       <div class="tasa-nota">
         Tasa de cambio aplicada: <strong>Bs. {{ tasa }} por $1 USD</strong> (BCV)

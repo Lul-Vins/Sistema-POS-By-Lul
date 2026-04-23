@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <title>Ticket #{{ venta.pk }}</title>
+  <title>Factura {{ venta.numero_fmt }}</title>
   <style>
     @page {
       size: 80mm auto;
@@ -169,12 +169,16 @@
   <!-- Meta de la venta -->
   <table class="meta">
     <tr>
-      <td>Ticket N° {{ venta.pk }}</td>
+      <td>Factura N° {{ venta.numero_fmt }}</td>
       <td class="right">{{ venta.fecha|date:"d/m/Y" }}</td>
     </tr>
     <tr>
-      <td class="muted">{{ venta.get_metodo_pago_display }}</td>
+      <td class="muted">N° Control: {{ venta.numero_control_fmt }}</td>
       <td class="right muted">{{ venta.fecha|date:"H:i" }}</td>
+    </tr>
+    <tr>
+      <td class="muted">{{ venta.get_metodo_pago_display }}</td>
+      <td></td>
     </tr>
   </table>
 
@@ -210,16 +214,33 @@
     <div class="total-num">Bs. {{ venta.total_bs|floatformat:2 }}</div>
   </div>
 
-  <!-- Desglose -->
+  <!-- Desglose fiscal SENIAT -->
+  <div class="sep-dash"></div>
+  <table class="desglose">
+    {% if venta.monto_exento_bs %}
+    <tr>
+      <td class="lbl">Monto Exento</td>
+      <td class="val">Bs. {{ venta.monto_exento_bs|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+    {% if venta.base_imponible_bs %}
+    <tr>
+      <td class="lbl">Base Imponible</td>
+      <td class="val">Bs. {{ venta.base_imponible_bs|floatformat:2 }}</td>
+    </tr>
+    <tr>
+      <td class="lbl">Monto IVA</td>
+      <td class="val">Bs. {{ venta.iva_bs|floatformat:2 }}</td>
+    </tr>
+    {% endif %}
+  </table>
+
+  <!-- Desglose de pago -->
   <div class="sep-dash"></div>
   <table class="desglose">
     <tr>
       <td class="lbl">Tasa BCV</td>
       <td class="val">Bs. {{ tasa|floatformat:2 }}</td>
-    </tr>
-    <tr>
-      <td class="lbl">Método de pago</td>
-      <td class="val">{{ venta.get_metodo_pago_display }}</td>
     </tr>
     {% if monto_recibido_bs is not None %}
     <tr>

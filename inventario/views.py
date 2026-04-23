@@ -49,12 +49,15 @@ def guardar_producto(request):
         costo_usd   = data.get('costo_usd') or None
         stock_actual = data.get('stock_actual', 0)
         stock_minimo = data.get('stock_minimo', 5)
-        activo      = str(data.get('activo', 'true')).lower() in ('true', '1', 'on')
+        activo       = str(data.get('activo', 'true')).lower() in ('true', '1', 'on')
+        alicuota_iva = data.get('alicuota_iva', 'GENERAL')
 
         if not nombre:
             return JsonResponse({'ok': False, 'error': 'El nombre es obligatorio.'}, status=400)
         if not precio_usd:
             return JsonResponse({'ok': False, 'error': 'El precio es obligatorio.'}, status=400)
+        if alicuota_iva not in dict(Producto.ALICUOTA_IVA):
+            return JsonResponse({'ok': False, 'error': 'Alícuota IVA inválida.'}, status=400)
 
         precio_usd   = float(precio_usd)
         costo_usd    = float(costo_usd) if costo_usd else None
@@ -86,6 +89,7 @@ def guardar_producto(request):
         producto.stock_actual = stock_actual
         producto.stock_minimo = stock_minimo
         producto.activo       = activo
+        producto.alicuota_iva = alicuota_iva
 
         if imagen:
             producto.imagen = imagen

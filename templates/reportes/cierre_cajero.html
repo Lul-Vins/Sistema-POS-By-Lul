@@ -105,7 +105,7 @@
           {% for v in m.ventas %}
           <tr>
             <td class="ps-3 text-muted" style="font-size:.85rem;">{{ v.fecha|date:"H:i" }}</td>
-            <td class="ps-3">#{{ v.id }}</td>
+            <td class="ps-3">{{ v.numero_fmt }}</td>
             <td class="text-end pe-3 fw-semibold">{{ v.total_bs|floatformat:2 }}</td>
           </tr>
           {% endfor %}

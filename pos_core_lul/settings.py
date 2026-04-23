@@ -4,17 +4,20 @@ Sistema POS local, offline, multimoneda (USD/Bs) para pequeños comercios.
 """
 
 from pathlib import Path
+from decouple import config, Csv
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = 'django-insecure-ts^crbevk_d(ys5m*)av!#z%5%73+up&85gizccl(9y(omc8b9'
+# ── Seguridad ─────────────────────────────────────────────────────
 
-DEBUG = True
+SECRET_KEY = config('SECRET_KEY')
 
-ALLOWED_HOSTS = ['localhost', '127.0.0.1']
+DEBUG = config('DEBUG', default=False, cast=bool)
+
+ALLOWED_HOSTS = config('ALLOWED_HOSTS', default='localhost,127.0.0.1', cast=Csv())
 
 
-# --- Apps ---
+# ── Apps ──────────────────────────────────────────────────────────
 
 INSTALLED_APPS = [
     'django.contrib.admin',
@@ -62,7 +65,7 @@ TEMPLATES = [
 WSGI_APPLICATION = 'pos_core_lul.wsgi.application'
 
 
-# --- Base de Datos (SQLite — portabilidad total, sin servidor) ---
+# ── Base de Datos (SQLite — portabilidad total, sin servidor) ─────
 
 DATABASES = {
     'default': {
@@ -72,17 +75,18 @@ DATABASES = {
 }
 
 
-# --- Validación de contraseñas (mínima — sistema local offline) ---
+# ── Validación de contraseñas (mínima — sistema local offline) ────
 
 AUTH_PASSWORD_VALIDATORS = []
 
-# --- Auth ---
+
+# ── Auth ──────────────────────────────────────────────────────────
 
 LOGIN_URL = '/login/'
 LOGIN_REDIRECT_URL = '/'
 
 
-# --- Internacionalización ---
+# ── Internacionalización ──────────────────────────────────────────
 
 LANGUAGE_CODE = 'es-ve'
 
@@ -93,18 +97,19 @@ USE_I18N = True
 USE_TZ = True
 
 
-# --- Archivos estáticos ---
+# ── Archivos estáticos ────────────────────────────────────────────
 
 STATIC_URL = '/static/'
 STATICFILES_DIRS = [BASE_DIR / 'static']
+STATIC_ROOT = BASE_DIR / 'staticfiles'
 
 
-# --- Archivos de media (logos, imágenes de productos) ---
+# ── Archivos de media (logos, imágenes de productos) ─────────────
 
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
-# --- Clave primaria por defecto ---
+# ── Clave primaria por defecto ────────────────────────────────────
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'

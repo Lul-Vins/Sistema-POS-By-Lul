@@ -284,7 +284,7 @@
               {% for venta in metodo.ventas %}
               <div class="transaccion-item">
                 <div class="transaccion-info">
-                  <span class="transaccion-hora">#{{ venta.pk }} &nbsp;{{ venta.fecha|date:"H:i" }}</span>
+                  <span class="transaccion-hora">{{ venta.numero_fmt }} &nbsp;{{ venta.fecha|date:"H:i" }}</span>
                   <span class="transaccion-productos">
                     {% for d in venta.detalles.all %}{{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}
                   </span>
@@ -421,7 +421,7 @@
               <tbody>
                 {% for venta in metodo.ventas %}
                 <tr>
-                  <td>{{ venta.pk }}</td>
+                  <td>{{ venta.numero_fmt }}</td>
                   <td>{{ venta.fecha|date:"H:i" }}</td>
                   <td style="color:#555; font-size:10.5px;">
                     {% for d in venta.detalles.all %}{{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}{% endfor %}

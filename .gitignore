@@ -1,6 +1,9 @@
 # Entorno virtual
 .venv/
 
+# Variables de entorno (SECRET_KEY, etc.) — nunca al repositorio
+.env
+
 # Base de datos
 db.sqlite3
 

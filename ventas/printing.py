@@ -55,7 +55,8 @@ def imprimir_ticket(venta, empresa):
         # ── Datos del ticket ──────────────────────────────────────
         from django.utils import timezone as tz
         fecha_local = tz.localtime(venta.fecha)
-        p.text(f"Ticket N: {venta.pk:<8}  {fecha_local.strftime('%d/%m/%Y %H:%M')}\n")
+        p.text(f"Factura N: {venta.numero_fmt}  {fecha_local.strftime('%d/%m/%Y %H:%M')}\n")
+        p.text(f"N Control: {venta.numero_control_fmt}\n")
         p.text(f"Metodo: {venta.get_metodo_pago_display()}\n")
         p.text(sep)
 
@@ -93,7 +94,16 @@ def imprimir_ticket(venta, empresa):
 
         p.text(sep)
 
-        # ── Desglose ─────────────────────────────────────────────
+        # ── Desglose fiscal SENIAT ────────────────────────────────
+        if float(venta.monto_exento_bs) > 0:
+            p.text(f"{'Monto Exento:':<16} Bs. {float(venta.monto_exento_bs):.2f}\n")
+        if float(venta.base_imponible_bs) > 0:
+            p.text(f"{'Base Impon.:':<16} Bs. {float(venta.base_imponible_bs):.2f}\n")
+            p.text(f"{'Monto IVA:':<16} Bs. {float(venta.iva_bs):.2f}\n")
+
+        p.text(sep)
+
+        # ── Desglose de pago ──────────────────────────────────────
         p.text(f"{'Tasa BCV:':<16} Bs. {float(tasa):.2f}\n")
 
         if venta.monto_recibido is not None:

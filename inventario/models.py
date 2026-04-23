@@ -15,6 +15,13 @@ class Categoria(models.Model):
 
 
 class Producto(models.Model):
+
+    ALICUOTA_IVA = [
+        ('GENERAL',  'General (16%)'),
+        ('REDUCIDA', 'Reducida (8%)'),
+        ('EXENTO',   'Exento (0%)'),
+    ]
+
     categoria = models.ForeignKey(
         Categoria,
         on_delete=models.SET_NULL,
@@ -30,6 +37,7 @@ class Producto(models.Model):
     stock_minimo = models.IntegerField(default=5)
     imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     activo = models.BooleanField(default=True)
+    alicuota_iva = models.CharField(max_length=10, choices=ALICUOTA_IVA, default='GENERAL')
 
     class Meta:
         verbose_name = 'Producto'

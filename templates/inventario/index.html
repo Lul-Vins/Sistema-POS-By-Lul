@@ -232,6 +232,7 @@
           data-imagen="{% if p.imagen %}{{ p.imagen.url }}{% endif %}"
           data-stock-estado="{% if p.stock_actual == 0 %}agotado{% elif p.stock_bajo %}stock-bajo{% else %}ok{% endif %}"
           data-categoria-nombre="{{ p.categoria.nombre|default:'' }}"
+          data-alicuota="{{ p.alicuota_iva }}"
           onclick="abrirModalEditar(this)"
       >
         <td>
@@ -362,6 +363,18 @@
             <label class="form-label">Stock mínimo <span class="text-muted fw-normal">(alerta)</span></label>
             <input type="number" id="prod-stock-min" class="form-control" value="5" min="0">
           </div>
+        </div>
+
+        <!-- Sección: Fiscal -->
+        <div class="seccion-titulo">Configuración fiscal</div>
+        <div class="mb-3">
+          <label class="form-label">Alícuota IVA</label>
+          <select id="prod-alicuota" class="form-select form-select-sm">
+            <option value="GENERAL">General (16%)</option>
+            <option value="REDUCIDA">Reducida (8%)</option>
+            <option value="EXENTO">Exento (0%)</option>
+          </select>
+          <div class="form-text">La mayoría de los productos aplica 16% (tasa general).</div>
         </div>
 
         <!-- Sección: Imagen y estado -->
@@ -529,6 +542,7 @@
     document.getElementById('prod-stock').value        = fila.dataset.stock;
     document.getElementById('prod-stock-min').value    = fila.dataset.stockMin;
     document.getElementById('prod-activo').checked     = fila.dataset.activo === 'true';
+    document.getElementById('prod-alicuota').value     = fila.dataset.alicuota || 'GENERAL';
 
     if (fila.dataset.imagen) {
       const prev = document.getElementById('preview-imagen');
@@ -550,8 +564,9 @@
     document.getElementById('prod-precio').value    = '';
     document.getElementById('prod-stock').value     = '0';
     document.getElementById('prod-stock-min').value = '5';
-    document.getElementById('prod-activo').checked  = true;
-    document.getElementById('prod-imagen').value    = '';
+    document.getElementById('prod-activo').checked   = true;
+    document.getElementById('prod-alicuota').value   = 'GENERAL';
+    document.getElementById('prod-imagen').value     = '';
     document.getElementById('preview-imagen').style.display = 'none';
     document.getElementById('preview-margen').style.display = 'none';
     document.getElementById('prod-feedback').textContent    = '';
@@ -584,6 +599,7 @@
     form.append('stock_actual', document.getElementById('prod-stock').value);
     form.append('stock_minimo', document.getElementById('prod-stock-min').value);
     form.append('activo',       document.getElementById('prod-activo').checked ? 'true' : 'false');
+    form.append('alicuota_iva', document.getElementById('prod-alicuota').value);
 
     const imgFile = document.getElementById('prod-imagen').files[0];
     if (imgFile) form.append('imagen', imgFile);
