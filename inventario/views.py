@@ -2,6 +2,7 @@ from django.shortcuts import get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.template.response import TemplateResponse
+from django.db.models import Count
 import json
 import math
 
@@ -13,18 +14,21 @@ from pos_core_lul.decorators import solo_admin
 @solo_admin
 def index(request):
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
     tasa    = moneda.tasa_cambio if moneda else None
 
-    productos   = Producto.objects.select_related('categoria').order_by('nombre')
-    categorias  = Categoria.objects.order_by('nombre')
+    productos  = Producto.objects.select_related('categoria').order_by('nombre')
+    categorias = Categoria.objects.order_by('nombre').annotate(num_productos=Count('productos'))
+
+    cats_js = [{'id': c.id, 'nombre': c.nombre, 'num': c.num_productos} for c in categorias]
 
     return TemplateResponse(request, 'inventario/index.html', {
-        'tasa':       tasa,
-        'moneda':     moneda,
-        'empresa':    empresa,
-        'productos':  productos,
-        'categorias': categorias,
+        'tasa':        tasa,
+        'moneda':      moneda,
+        'empresa':     empresa,
+        'productos':   productos,
+        'categorias':  categorias,
+        'cats_js':     cats_js,
     })
 
 
@@ -132,3 +136,31 @@ def eliminar_producto(request, pk):
 def lista_categorias(request):
     cats = list(Categoria.objects.order_by('nombre').values('id', 'nombre'))
     return JsonResponse({'categorias': cats})
+
+
+@solo_admin
+@require_POST
+def crear_categoria(request):
+    try:
+        data   = json.loads(request.body)
+        nombre = data.get('nombre', '').strip()
+        if not nombre:
+            return JsonResponse({'ok': False, 'error': 'El nombre es obligatorio.'}, status=400)
+        if Categoria.objects.filter(nombre__iexact=nombre).exists():
+            return JsonResponse({'ok': False, 'error': 'Ya existe una categoría con ese nombre.'}, status=400)
+        cat = Categoria.objects.create(nombre=nombre)
+        return JsonResponse({'ok': True, 'id': cat.id, 'nombre': cat.nombre})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)
+
+
+@solo_admin
+@require_POST
+def eliminar_categoria(request, pk):
+    try:
+        cat          = get_object_or_404(Categoria, pk=pk)
+        num_productos = cat.productos.count()
+        cat.delete()   # SET_NULL en FK — los productos quedan sin categoría
+        return JsonResponse({'ok': True, 'num_productos': num_productos})
+    except Exception as e:
+        return JsonResponse({'ok': False, 'error': str(e)}, status=500)

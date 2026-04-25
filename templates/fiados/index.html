@@ -1,0 +1,260 @@
+{% extends "base.html" %}
+
+{% block titulo %}Fiados{% endblock %}
+{% block nav_fiados %}active{% endblock %}
+
+{% block estilos_extra %}
+<style>
+  .stat-card {
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 12px;
+    padding: 1.25rem 1.75rem;
+  }
+  .stat-card .val  { font-size: 2rem; font-weight: 800; line-height: 1.1; }
+  .stat-card .lbl  { font-size: .78rem; opacity: .7; text-transform: uppercase; letter-spacing: .5px; margin-bottom: .25rem; }
+  .stat-card.rojo  { background: #7f1d1d; }
+  .stat-card.verde { background: #2d6a4f; }
+
+  .cliente-row { cursor: pointer; transition: background .12s; }
+  .cliente-row:hover { background: #f0faf4 !important; }
+
+  .saldo-badge-alto   { background: #fee2e2; color: #991b1b; }
+  .saldo-badge-medio  { background: #fef3c7; color: #92400e; }
+  .saldo-badge-bajo   { background: #d1fae5; color: #065f46; }
+  .saldo-badge-cero   { background: #e9ecef; color: #6c757d; }
+
+  .btn-nuevo-cliente {
+    background: #2d6a4f; color: #fff; border: none;
+    border-radius: 8px; padding: .45rem 1.1rem;
+    font-weight: 700; white-space: nowrap;
+  }
+  .btn-nuevo-cliente:hover { background: #1b4332; color: #fff; }
+</style>
+{% endblock %}
+
+{% block contenido %}
+<div style="max-width: 960px; margin: 0 auto;">
+
+  <!-- Encabezado -->
+  <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+    <div>
+      <h4 class="fw-bold mb-0"><i class="bi bi-people me-2"></i>Fiados</h4>
+      <small class="text-muted">Clientes con cuentas pendientes</small>
+    </div>
+    <button class="btn-nuevo-cliente" onclick="abrirModalNuevo()">
+      <i class="bi bi-person-plus me-1"></i>Nuevo cliente
+    </button>
+  </div>
+
+  <!-- Tarjetas resumen -->
+  <div class="row g-3 mb-4">
+    <div class="col-sm-4">
+      <div class="stat-card rojo">
+        <div class="lbl">Deuda total pendiente</div>
+        <div class="val">$ {{ total_deuda|floatformat:2 }}</div>
+        {% if tasa %}<div style="font-size:.82rem; opacity:.75; margin-top:.3rem;">Bs. {{ total_deuda|floatformat:2|add:"0" }} × {{ tasa }}</div>{% endif %}
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="stat-card">
+        <div class="lbl">Clientes con deuda</div>
+        <div class="val">{{ con_deuda }}</div>
+      </div>
+    </div>
+    <div class="col-sm-4">
+      <div class="stat-card verde">
+        <div class="lbl">Total clientes registrados</div>
+        <div class="val">{{ clientes|length }}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Buscador -->
+  <div class="mb-3">
+    <input type="text" id="buscador-clientes" class="form-control"
+           placeholder="Buscar cliente por nombre o teléfono..." autocomplete="off">
+  </div>
+
+  <!-- Tabla de clientes -->
+  {% if clientes %}
+  <div class="bg-white rounded-3 shadow-sm overflow-hidden">
+    <table class="table mb-0" id="tabla-clientes">
+      <thead style="background:#1a1a2e; color:#fff;">
+        <tr>
+          <th>Cliente</th>
+          <th>Teléfono</th>
+          <th class="text-end">Deuda activa (USD)</th>
+          <th class="text-center">Fiados activos</th>
+          <th class="text-center">Estado</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for c in clientes %}
+        <tr class="cliente-row"
+            data-nombre="{{ c.nombre|lower }}"
+            data-tel="{{ c.telefono|lower }}"
+            onclick="window.location='{% url 'fiados:cliente' c.pk %}'">
+          <td>
+            <div class="fw-semibold">{{ c.nombre }}</div>
+            {% if c.direccion %}<div class="text-muted" style="font-size:.78rem;">{{ c.direccion|truncatechars:40 }}</div>{% endif %}
+          </td>
+          <td class="text-muted">{{ c.telefono|default:"—" }}</td>
+          <td class="text-end fw-bold">
+            {% if c.saldo_total > 0 %}
+              <span class="text-danger">$ {{ c.saldo_total|floatformat:2 }}</span>
+            {% else %}
+              <span class="text-muted">$ 0.00</span>
+            {% endif %}
+          </td>
+          <td class="text-center text-muted">{{ c.fiados_activos }}</td>
+          <td class="text-center">
+            {% if not c.activo %}
+              <span class="badge bg-secondary">Inactivo</span>
+            {% elif c.saldo_total > 20 %}
+              <span class="badge saldo-badge-alto">Deuda alta</span>
+            {% elif c.saldo_total > 5 %}
+              <span class="badge saldo-badge-medio">Deuda media</span>
+            {% elif c.saldo_total > 0 %}
+              <span class="badge saldo-badge-bajo">Deuda baja</span>
+            {% else %}
+              <span class="badge saldo-badge-cero">Al día</span>
+            {% endif %}
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="text-center text-muted py-5">
+    <i class="bi bi-people" style="font-size:3rem; display:block; opacity:.3; margin-bottom:.75rem;"></i>
+    No hay clientes registrados aún.
+    <button class="btn btn-link p-0 ms-1" onclick="abrirModalNuevo()">Agrega el primero.</button>
+  </div>
+  {% endif %}
+
+</div>
+
+
+<!-- ══ MODAL NUEVO CLIENTE ══════════════════════════════════════ -->
+<div class="modal fade" id="modalCliente" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:460px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header" style="background:#1a1a2e; color:#fff; border:none;">
+        <h5 class="modal-title fw-bold" id="modal-cliente-titulo">
+          <i class="bi bi-person-plus me-2"></i>Nuevo cliente
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal" style="filter:invert(1);"></button>
+      </div>
+
+      <div class="modal-body px-4 pt-4">
+        <input type="hidden" id="cliente-pk" value="0">
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold">Nombre <span class="text-danger">*</span></label>
+          <input type="text" id="cliente-nombre" class="form-control" placeholder="Ej: María González" maxlength="200" autofocus>
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-muted">Teléfono <small class="fw-normal">(opcional)</small></label>
+          <input type="text" id="cliente-telefono" class="form-control" placeholder="Ej: 0414-1234567" maxlength="20">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-muted">Dirección <small class="fw-normal">(opcional)</small></label>
+          <input type="text" id="cliente-direccion" class="form-control" placeholder="Ej: Calle Bolívar, casa #5">
+        </div>
+        <div class="mb-3">
+          <label class="form-label fw-semibold text-muted">Notas <small class="fw-normal">(opcional)</small></label>
+          <textarea id="cliente-notas" class="form-control" rows="2" placeholder="Referencias, observaciones..."></textarea>
+        </div>
+
+        <div id="cliente-feedback" class="text-danger mb-2" style="font-size:.85rem; min-height:1.1rem;"></div>
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4 pt-0">
+        <button type="button" class="btn btn-success w-100 fw-bold py-2" id="btn-guardar-cliente">
+          <i class="bi bi-check-lg me-1"></i>Guardar cliente
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+
+{% block scripts_extra %}
+<script>
+  const URL_CREAR  = "{% url 'fiados:crear_cliente' %}";
+  const CSRF_F     = "{{ csrf_token }}";
+  const modalEl    = document.getElementById('modalCliente');
+  const modal      = new bootstrap.Modal(modalEl);
+
+  // ── Buscador ──────────────────────────────────────────────────
+  document.getElementById('buscador-clientes').addEventListener('input', function () {
+    const q = this.value.trim().toLowerCase();
+    document.querySelectorAll('#tabla-clientes tbody tr').forEach(tr => {
+      const match = !q || tr.dataset.nombre.includes(q) || tr.dataset.tel.includes(q);
+      tr.style.display = match ? '' : 'none';
+    });
+  });
+
+  // ── Modal nuevo cliente ───────────────────────────────────────
+  function abrirModalNuevo() {
+    document.getElementById('modal-cliente-titulo').innerHTML =
+      '<i class="bi bi-person-plus me-2"></i>Nuevo cliente';
+    document.getElementById('cliente-pk').value       = '0';
+    document.getElementById('cliente-nombre').value   = '';
+    document.getElementById('cliente-telefono').value = '';
+    document.getElementById('cliente-direccion').value = '';
+    document.getElementById('cliente-notas').value    = '';
+    document.getElementById('cliente-feedback').textContent = '';
+    modal.show();
+    setTimeout(() => document.getElementById('cliente-nombre').focus(), 300);
+  }
+
+  document.getElementById('btn-guardar-cliente').addEventListener('click', function () {
+    const feedback = document.getElementById('cliente-feedback');
+    const nombre   = document.getElementById('cliente-nombre').value.trim();
+    if (!nombre) {
+      feedback.textContent = 'El nombre es obligatorio.';
+      document.getElementById('cliente-nombre').focus();
+      return;
+    }
+
+    this.disabled  = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+    feedback.textContent = '';
+
+    fetch(URL_CREAR, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_F },
+      body: JSON.stringify({
+        nombre:    nombre,
+        telefono:  document.getElementById('cliente-telefono').value.trim(),
+        direccion: document.getElementById('cliente-direccion').value.trim(),
+        notas:     document.getElementById('cliente-notas').value.trim(),
+      }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          window.location = data.url;
+        } else {
+          feedback.textContent = data.error || 'Error al guardar.';
+        }
+      })
+      .catch(() => { feedback.textContent = 'Error de conexión.'; })
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar cliente';
+      });
+  });
+
+  // Enter en nombre guarda
+  document.getElementById('cliente-nombre').addEventListener('keydown', e => {
+    if (e.key === 'Enter') document.getElementById('btn-guardar-cliente').click();
+  });
+</script>
+{% endblock %}

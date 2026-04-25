@@ -7,7 +7,7 @@ from django.utils import timezone
 import json
 from datetime import date
 
-from inventario.models import Producto
+from inventario.models import Producto, Categoria
 from configuracion.models import Empresa, Moneda
 from .models import Venta, DetalleVenta
 from pos_core_lul.decorators import login_required, solo_admin
@@ -16,13 +16,15 @@ from pos_core_lul.decorators import login_required, solo_admin
 @login_required
 def venta(request):
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
     tasa    = moneda.tasa_cambio if moneda else None
 
     tasa_vencida = False
     if moneda:
         antigüedad = timezone.now() - moneda.ultima_actualizacion
         tasa_vencida = antigüedad.total_seconds() > 15 * 3600
+
+    categorias = Categoria.objects.order_by('nombre')
 
     return render(request, 'pos/venta.html', {
         'tasa':             tasa,
@@ -31,6 +33,7 @@ def venta(request):
         'metodos_pago':     Venta.METODO_PAGO,
         'imprimir_ticket':  empresa.imprimir_ticket if empresa else False,
         'tasa_vencida':     tasa_vencida,
+        'categorias':       categorias,
     })
 
 
@@ -82,7 +85,7 @@ def procesar_venta(request):
         monto_recibido = body.get('monto_recibido')  # None si no es efectivo
         vuelto         = body.get('vuelto')
 
-        empresa = Empresa.objects.first()
+        empresa = Empresa.objects.first() or Empresa()
 
         if not carrito:
             return JsonResponse({'ok': False, 'error': 'El carrito está vacío.'}, status=400)
@@ -122,15 +125,24 @@ def procesar_venta(request):
 
 @login_required
 def buscar_productos(request):
-    q = request.GET.get('q', '').strip()
+    from django.db.models import Q
 
-    if len(q) < 2:
+    q      = request.GET.get('q', '').strip()
+    cat_id = request.GET.get('cat', '').strip()
+
+    if len(q) < 2 and not cat_id:
         return JsonResponse({'productos': []})
 
-    # Búsqueda por código de barras (exacto) o nombre (icontains)
     qs = Producto.objects.filter(activo=True).select_related('categoria')
-    qs = qs.filter(nombre__icontains=q) | qs.filter(codigo_barras=q)
-    qs = qs.distinct()[:30]  # máximo 30 resultados
+
+    if cat_id:
+        qs = qs.filter(categoria_id=cat_id)
+
+    if len(q) >= 2:
+        qs = qs.filter(Q(nombre__icontains=q) | Q(codigo_barras=q))
+
+    limite = 30 if len(q) >= 2 else 60
+    qs = qs.distinct()[:limite]
 
     try:
         tasa = Moneda.get_tasa_activa()
@@ -192,7 +204,7 @@ def mis_ventas(request):
     )
 
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
 
     return render(request, 'pos/mis_ventas.html', {
         'ventas':  ventas,

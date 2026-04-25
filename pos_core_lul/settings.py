@@ -33,6 +33,7 @@ INSTALLED_APPS = [
     'inventario',
     'ventas',
     'reportes',
+    'fiados',
 ]
 
 MIDDLEWARE = [
@@ -93,6 +94,8 @@ LANGUAGE_CODE = 'es-ve'
 TIME_ZONE = 'America/Caracas'
 
 USE_I18N = True
+
+USE_L10N = False  # evita localización de números (coma decimal) que rompe JS
 
 USE_TZ = True
 

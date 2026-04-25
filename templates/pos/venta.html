@@ -17,7 +17,8 @@
     flex: 1;
     display: flex;
     flex-direction: column;
-    min-width: 0; /* evita overflow en flex */
+    min-width: 0;
+    overflow-x: clip; /* evita que los chips desborden hacia el carrito */
   }
 
   .buscador-wrap {
@@ -156,6 +157,58 @@
     width: fit-content;
     margin-top: 3px;
   }
+
+  /* ── Chips de categoría ───────────────────────────────────── */
+  .cat-chips-nav {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .chips-nav-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    color: #6c757d;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    transition: all .12s;
+  }
+  .chips-nav-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+  .cat-chips-wrap {
+    flex: 1;
+    display: flex;
+    gap: .4rem;
+    overflow-x: auto;
+    padding: .5rem 0 .15rem;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .cat-chips-wrap::-webkit-scrollbar { display: none; }
+
+  .cat-chip {
+    flex-shrink: 0;
+    padding: .28rem .85rem;
+    border-radius: 20px;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    font-size: .78rem;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .cat-chip:hover  { border-color: #2d6a4f; color: #2d6a4f; }
+  .cat-chip.activa { background: #2d6a4f; border-color: #2d6a4f; color: #fff; font-weight: 700; }
 
   /* Sin resultados */
   .sin-resultados {
@@ -417,6 +470,29 @@
           <i class="bi bi-x-lg"></i>
         </button>
       </div>
+
+      {% if categorias %}
+      <div class="cat-chips-nav">
+        <button class="chips-nav-btn" id="chips-prev" onclick="scrollChips(-1)" style="display:none" title="Anterior">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <div class="cat-chips-wrap" id="cat-chips-wrap">
+          <button class="cat-chip activa" data-cat-id=""
+                  onclick="seleccionarCategoria(null, this)">
+            <i class="bi bi-grid-fill me-1"></i>Todos
+          </button>
+          {% for cat in categorias %}
+          <button class="cat-chip" data-cat-id="{{ cat.id }}"
+                  onclick="seleccionarCategoria({{ cat.id }}, this)">
+            {{ cat.nombre }}
+          </button>
+          {% endfor %}
+        </div>
+        <button class="chips-nav-btn" id="chips-next" onclick="scrollChips(1)" style="display:none" title="Siguiente">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+      {% endif %}
     </div>
 
     <!-- Grid de productos (se llena por AJAX) -->
@@ -611,57 +687,111 @@
   const TASA_VENCIDA    = {{ tasa_vencida|yesno:"true,false" }};
   const URL_TICKET      = "{% url 'pos:ticket' pk=0 %}".replace('/0/', '/');
   const URL_BUSCAR      = "{% url 'pos:buscar_productos' %}";
-  let carrito       = {};
-  let timerBusqueda = null;
+  let carrito        = {};
+  let timerBusqueda  = null;
+  let catSeleccionada = null;
 
   // ── Elementos del DOM ──────────────────────────────────────
-  const buscador          = document.getElementById('buscador');
-  const btnLimpiar        = document.getElementById('btn-limpiar');
-  const grid              = document.getElementById('productos-grid');
-  const estadoInicial     = document.getElementById('estado-inicial');
-  const estadoCargando    = document.getElementById('estado-cargando');
+  const buscador            = document.getElementById('buscador');
+  const btnLimpiar          = document.getElementById('btn-limpiar');
+  const grid                = document.getElementById('productos-grid');
+  const estadoInicial       = document.getElementById('estado-inicial');
+  const estadoCargando      = document.getElementById('estado-cargando');
   const estadoSinResultados = document.getElementById('estado-sin-resultados');
-  const terminoSpan       = document.getElementById('termino-busqueda');
+  const terminoSpan         = document.getElementById('termino-busqueda');
 
   // ── Búsqueda AJAX con debounce ─────────────────────────────
   buscador.addEventListener('input', function () {
     const q = this.value.trim();
     clearTimeout(timerBusqueda);
 
-    if (q.length < 2) {
+    if (q.length < 2 && !catSeleccionada) {
       mostrarEstado('inicial');
       grid.innerHTML = '';
       return;
     }
 
     mostrarEstado('cargando');
-    timerBusqueda = setTimeout(() => buscar(q), 300);
+    timerBusqueda = setTimeout(() => buscar(q, false, catSeleccionada), 300);
   });
 
   // Enter: búsqueda inmediata (flujo lector de barras)
   buscador.addEventListener('keydown', function (e) {
     if (e.key !== 'Enter') return;
     const q = this.value.trim();
-    if (q.length < 2) return;
+    if (q.length < 2 && !catSeleccionada) return;
     clearTimeout(timerBusqueda);
-    buscar(q, true); // agregarDirecto=true si hay 1 solo resultado
+    buscar(q, q.length >= 2, catSeleccionada);
   });
 
   btnLimpiar.addEventListener('click', () => {
     buscador.value = '';
-    buscador.dispatchEvent(new Event('input'));
+    if (catSeleccionada) {
+      mostrarEstado('cargando');
+      buscar('', false, catSeleccionada);
+    } else {
+      buscador.dispatchEvent(new Event('input'));
+    }
     buscador.focus();
   });
 
-  function buscar(q, agregarDirecto = false) {
-    fetch(`${URL_BUSCAR}?q=${encodeURIComponent(q)}`)
+  // ── Navegación de chips ────────────────────────────────────
+  function actualizarBotonesChips() {
+    const wrap = document.getElementById('cat-chips-wrap');
+    const prev = document.getElementById('chips-prev');
+    const next = document.getElementById('chips-next');
+    if (!wrap || !prev || !next) return;
+    prev.style.display = wrap.scrollLeft > 1 ? '' : 'none';
+    next.style.display = wrap.scrollLeft < wrap.scrollWidth - wrap.clientWidth - 1 ? '' : 'none';
+  }
+  function scrollChips(dir) {
+    const wrap = document.getElementById('cat-chips-wrap');
+    if (!wrap) return;
+    wrap.scrollBy({ left: dir * 180, behavior: 'smooth' });
+    setTimeout(actualizarBotonesChips, 320);
+  }
+  (function () {
+    const wrap = document.getElementById('cat-chips-wrap');
+    if (!wrap) return;
+    wrap.addEventListener('scroll', actualizarBotonesChips);
+    actualizarBotonesChips();
+  })();
+
+  // ── Filtro por categoría ───────────────────────────────────
+  function seleccionarCategoria(catId, btnEl) {
+    document.querySelectorAll('.cat-chip').forEach(b => b.classList.remove('activa'));
+    btnEl.classList.add('activa');
+    catSeleccionada = catId || null;
+
+    const q = buscador.value.trim();
+    if (catSeleccionada) {
+      mostrarEstado('cargando');
+      buscar(q.length >= 2 ? q : '', false, catSeleccionada);
+    } else {
+      if (q.length >= 2) {
+        mostrarEstado('cargando');
+        buscar(q, false, null);
+      } else {
+        mostrarEstado('inicial');
+        grid.innerHTML = '';
+      }
+    }
+    buscador.focus();
+  }
+
+  function buscar(q, agregarDirecto = false, catId = null) {
+    const params = new URLSearchParams();
+    if (q)     params.set('q',   q);
+    if (catId) params.set('cat', catId);
+
+    fetch(`${URL_BUSCAR}?${params}`)
       .then(r => r.json())
       .then(data => {
         const productos = data.productos;
         grid.innerHTML = '';
 
         if (productos.length === 0) {
-          terminoSpan.textContent = q;
+          terminoSpan.textContent = q || 'esta categoría';
           mostrarEstado('sin-resultados');
           return;
         }
@@ -673,7 +803,11 @@
         if (agregarDirecto && productos.length === 1) {
           agregarAlCarrito(productos[0].id, productos[0].nombre, productos[0].precio_usd);
           buscador.value = '';
-          buscador.dispatchEvent(new Event('input'));
+          if (catSeleccionada) {
+            buscar('', false, catSeleccionada);
+          } else {
+            buscador.dispatchEvent(new Event('input'));
+          }
         }
       })
       .catch(() => mostrarEstado('inicial'));

@@ -187,9 +187,16 @@
     </select>
   </div>
 
-  <button class="btn-nuevo ms-auto" onclick="abrirModalNuevo()">
-    <i class="bi bi-plus-lg me-1"></i>Nuevo producto
-  </button>
+  <div class="d-flex gap-2 ms-auto">
+    <button class="btn btn-outline-secondary btn-sm px-3"
+            onclick="abrirModalCategorias()"
+            style="font-size:.82rem; border-radius:8px; white-space:nowrap;">
+      <i class="bi bi-tags me-1"></i>Categorías
+    </button>
+    <button class="btn-nuevo" onclick="abrirModalNuevo()">
+      <i class="bi bi-plus-lg me-1"></i>Nuevo producto
+    </button>
+  </div>
 </div>
 
 <!-- ── Resumen rápido ─────────────────────────────────────────── -->
@@ -410,15 +417,58 @@
 </div>
 <!-- ══ FIN MODAL PRODUCTO ═══════════════════════════════════════ -->
 
+
+<!-- ══ MODAL CATEGORÍAS ═════════════════════════════════════════ -->
+<div class="modal fade modal-producto" id="modalCategorias" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:440px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header">
+        <h5 class="modal-title fw-bold">
+          <i class="bi bi-tags me-2"></i>Gestionar categorías
+        </h5>
+        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body px-4 pb-4">
+
+        <!-- Crear nueva categoría -->
+        <div class="d-flex gap-2 mt-1 mb-2">
+          <input type="text" id="nueva-cat-nombre" class="form-control"
+                 placeholder="Nombre de la nueva categoría" maxlength="100"
+                 onkeydown="if(event.key==='Enter') crearCategoria()">
+          <button class="btn btn-success fw-bold px-3" onclick="crearCategoria()" id="btn-crear-cat">
+            <i class="bi bi-plus-lg"></i>
+          </button>
+        </div>
+        <div id="cat-feedback" class="text-danger mb-3" style="font-size:.85rem; min-height:1.1rem;"></div>
+
+        <!-- Lista de categorías -->
+        <div id="lista-cats" style="max-height:360px; overflow-y:auto;">
+          <!-- Se llena por JS -->
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL CATEGORÍAS ══════════════════════════════════════ -->
+
 {% endblock %}
 
 
 {% block scripts_extra %}
+{{ cats_js|json_script:"inv-cats-json" }}
 <script>
-  const TASA_INV      = parseFloat("{{ tasa|default:'0' }}") || 0;
-  const URL_GUARDAR   = "{% url 'inventario:guardar_producto' %}";
-  const URL_ELIMINAR  = "{% url 'inventario:eliminar_producto' pk=0 %}".replace('/0/', '/');
-  const CSRF_INV      = "{{ csrf_token }}";
+  const TASA_INV         = parseFloat("{{ tasa|default:'0' }}") || 0;
+  const URL_GUARDAR      = "{% url 'inventario:guardar_producto' %}";
+  const URL_ELIMINAR     = "{% url 'inventario:eliminar_producto' pk=0 %}".replace('/0/', '/');
+  const URL_CREAR_CAT    = "{% url 'inventario:crear_categoria' %}";
+  const URL_ELIMINAR_CAT = "{% url 'inventario:eliminar_categoria' pk=0 %}".replace('/0/', '/');
+  const CSRF_INV         = "{{ csrf_token }}";
+
+  // Datos de categorías para gestión dinámica
+  let cats = JSON.parse(document.getElementById('inv-cats-json').textContent);
 
   // ── Filtrado client-side ──────────────────────────────────
   const buscador    = document.getElementById('buscador-inv');
@@ -657,8 +707,138 @@
 
   // Actualizar tasa si se cambia desde el navbar
   window.onTasaActualizada = function(nuevaTasa) {
-    // Recargar para recalcular columna Bs.
     location.reload();
   };
+
+  // ── Gestión de Categorías ─────────────────────────────────
+  const modalCatsEl = document.getElementById('modalCategorias');
+  const modalCats   = new bootstrap.Modal(modalCatsEl);
+
+  function abrirModalCategorias() {
+    document.getElementById('nueva-cat-nombre').value = '';
+    document.getElementById('cat-feedback').textContent = '';
+    renderListaCats();
+    modalCats.show();
+    setTimeout(() => document.getElementById('nueva-cat-nombre').focus(), 300);
+  }
+
+  function renderListaCats() {
+    const contenedor = document.getElementById('lista-cats');
+    if (cats.length === 0) {
+      contenedor.innerHTML = '<p class="text-muted text-center py-3" style="font-size:.88rem;">No hay categorías creadas.</p>';
+      return;
+    }
+    contenedor.innerHTML = cats.map(c => `
+      <div class="d-flex align-items-center justify-content-between px-2 py-2
+                  border-bottom" style="font-size:.9rem;" id="cat-row-${c.id}">
+        <div>
+          <span class="fw-semibold">${escHtml(c.nombre)}</span>
+          <span class="text-muted ms-2" style="font-size:.78rem;">${c.num} producto${c.num !== 1 ? 's' : ''}</span>
+        </div>
+        <button class="btn btn-sm btn-outline-danger py-0 px-2"
+                style="font-size:.8rem; border-radius:6px;"
+                onclick="eliminarCategoria(${c.id}, '${escHtml(c.nombre)}', ${c.num})">
+          <i class="bi bi-trash"></i>
+        </button>
+      </div>`).join('');
+  }
+
+  function escHtml(str) {
+    return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function actualizarSelects(nuevasCats) {
+    // Actualiza ambos selects: filtro de inventario y modal de producto
+    ['filtro-categoria', 'prod-categoria'].forEach(id => {
+      const sel = document.getElementById(id);
+      if (!sel) return;
+      const valActual = sel.value;
+
+      // Reconstruir opciones (conservando la opción vacía de prod-categoria)
+      const esProducto = id === 'prod-categoria';
+      const opcionVacia = esProducto
+        ? '<option value="">Sin categoría</option>'
+        : '<option value="">Todas las categorías</option>';
+
+      sel.innerHTML = opcionVacia + nuevasCats.map(c =>
+        `<option value="${c.id}">${escHtml(c.nombre)}</option>`
+      ).join('');
+
+      // Restaurar selección si sigue existiendo
+      if (valActual && nuevasCats.find(c => String(c.id) === valActual)) {
+        sel.value = valActual;
+      }
+    });
+  }
+
+  function crearCategoria() {
+    const input    = document.getElementById('nueva-cat-nombre');
+    const feedback = document.getElementById('cat-feedback');
+    const nombre   = input.value.trim();
+
+    if (!nombre) { feedback.textContent = 'Escribe un nombre.'; return; }
+
+    const btn = document.getElementById('btn-crear-cat');
+    btn.disabled = true;
+    feedback.textContent = '';
+
+    fetch(URL_CREAR_CAT, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_INV },
+      body:    JSON.stringify({ nombre }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          input.value = '';
+          cats.push({ id: data.id, nombre: data.nombre, num: 0 });
+          cats.sort((a, b) => a.nombre.localeCompare(b.nombre));
+          renderListaCats();
+          actualizarSelects(cats);
+        } else {
+          feedback.textContent = data.error || 'Error al crear.';
+        }
+      })
+      .catch(() => { feedback.textContent = 'Error de conexión.'; })
+      .finally(() => { btn.disabled = false; });
+  }
+
+  function eliminarCategoria(id, nombre, numProductos) {
+    let msg = `¿Eliminar la categoría "${nombre}"?`;
+    if (numProductos > 0) {
+      msg += `\n\nTiene ${numProductos} producto${numProductos !== 1 ? 's' : ''} asignado${numProductos !== 1 ? 's' : ''}. Quedarán sin categoría.`;
+    }
+    if (!confirm(msg)) return;
+
+    fetch(`${URL_ELIMINAR_CAT}${id}/`, {
+      method:  'POST',
+      headers: { 'X-CSRFToken': CSRF_INV },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          cats = cats.filter(c => c.id !== id);
+          renderListaCats();
+          actualizarSelects(cats);
+
+          // Limpiar filas de la tabla que tenían esta categoría
+          document.querySelectorAll(`.fila-producto[data-categoria-id="${id}"]`).forEach(fila => {
+            fila.dataset.categoriaId   = '';
+            fila.dataset.categoriaNombre = '';
+            fila.querySelector('td:nth-child(3)').textContent = '—';
+          });
+
+          // Resetear filtro si estaba seleccionando esta categoría
+          const filtroCat = document.getElementById('filtro-categoria');
+          if (filtroCat.value === String(id)) {
+            filtroCat.value = '';
+            aplicarFiltros();
+          }
+        } else {
+          alert(data.error || 'Error al eliminar.');
+        }
+      })
+      .catch(() => alert('Error de conexión.'));
+  }
 </script>
 {% endblock %}

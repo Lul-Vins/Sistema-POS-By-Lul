@@ -36,7 +36,7 @@ def index(request):
     )
 
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
 
     return render(request, 'reportes/index.html', {
         'ventas':   ventas,
@@ -112,7 +112,7 @@ def cierre_caja(request):
     historico = CierreCaja.objects.order_by('-fecha')[:10]
 
     moneda = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
 
     return render(request, 'reportes/cierre_caja.html', {
         'fecha': fecha,
@@ -170,7 +170,7 @@ def imprimir_cierre(request):
     total_monto_exento_bs   = sum(float(v.monto_exento_bs)   for v in ventas_dia)
 
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
     cierre  = CierreCaja.objects.filter(fecha=fecha).first()
 
     return render(request, 'reportes/cierre_caja_print.html', {
@@ -275,7 +275,7 @@ def cierre_cajero(request):
     total_ventas     = sum(m['cantidad'] for m in resumen_metodos)
 
     moneda  = Moneda.objects.first()
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()
 
     return render(request, 'reportes/cierre_cajero.html', {
         'fecha':             fecha,

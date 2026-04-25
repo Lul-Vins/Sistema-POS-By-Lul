@@ -15,7 +15,7 @@ from pos_core_lul.decorators import solo_admin, login_required
 
 @solo_admin
 def configuracion_index(request):
-    empresa = Empresa.objects.first()
+    empresa = Empresa.objects.first() or Empresa()  # fallback vacío si DB nueva
     moneda = Moneda.objects.first()
 
     if request.method == 'POST':
@@ -200,7 +200,7 @@ def backup_db(request):
 
 @solo_admin
 def usuarios_index(request):
-    empresa  = Empresa.objects.first()
+    empresa  = Empresa.objects.first() or Empresa()
     moneda   = Moneda.objects.first()
     usuarios = User.objects.order_by('first_name', 'username')
     return render(request, 'configuracion/usuarios.html', {
