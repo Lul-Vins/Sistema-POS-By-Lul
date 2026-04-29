@@ -25,27 +25,32 @@ class EmpresaSingletonTests(TestCase):
     def test_actualizar_empresa_existente_no_lanza_error(self):
         e = Empresa.objects.create(nombre='Tienda', rif='J001')
         e.nombre = 'Tienda Actualizada'
-        e.save()  # no debe lanzar error
+        e.save()
         self.assertEqual(Empresa.objects.count(), 1)
 
 
 class MonedaSingletonTests(TestCase):
 
     def test_crea_primera_moneda(self):
+        # La migration 0004 ya creó una; la eliminamos para probar la creación limpia.
+        Moneda.objects.all().delete()
         m = Moneda.objects.create(tasa_cambio=50)
         self.assertEqual(float(m.tasa_cambio), 50.0)
 
     def test_segunda_moneda_lanza_error(self):
-        Moneda.objects.create(tasa_cambio=50)
+        # La migration ya provee la primera; crear otra debe fallar.
         with self.assertRaises(ValidationError):
             Moneda.objects.create(tasa_cambio=60)
 
     def test_get_tasa_activa_retorna_valor(self):
-        Moneda.objects.create(tasa_cambio=75.50)
+        m = Moneda.objects.first()
+        m.tasa_cambio = 75.50
+        m.save(update_fields=['tasa_cambio'])
         tasa = Moneda.get_tasa_activa()
         self.assertEqual(float(tasa), 75.50)
 
     def test_get_tasa_activa_sin_moneda_lanza_error(self):
+        Moneda.objects.all().delete()
         with self.assertRaises(ValueError) as ctx:
             Moneda.get_tasa_activa()
         self.assertIn('tasa de cambio', str(ctx.exception).lower())
@@ -58,7 +63,9 @@ class MonedaSingletonTests(TestCase):
 class ActualizarTasaTests(TestCase):
 
     def setUp(self):
-        self.moneda = Moneda.objects.create(tasa_cambio=50)
+        self.moneda = Moneda.objects.first()
+        self.moneda.tasa_cambio = 50
+        self.moneda.save(update_fields=['tasa_cambio'])
         Empresa.objects.create(nombre='Test', rif='J001')
         self.admin = User.objects.create_user('admin_t', password='admin1234', is_staff=True)
         self.client = Client()
@@ -106,7 +113,9 @@ class CrearUsuarioTests(TestCase):
 
     def setUp(self):
         Empresa.objects.create(nombre='Test', rif='J001')
-        Moneda.objects.create(tasa_cambio=50)
+        moneda = Moneda.objects.first()
+        moneda.tasa_cambio = 50
+        moneda.save(update_fields=['tasa_cambio'])
         self.admin = User.objects.create_user('admin_t', password='admin1234', is_staff=True)
         self.client = Client()
         self.client.login(username='admin_t', password='admin1234')
@@ -144,4 +153,29 @@ class CrearUsuarioTests(TestCase):
 
     def test_campos_vacios_rechazados(self):
         r = self._post({'nombre': '', 'username': '', 'password': '', 'es_admin': False})
+        self.assertEqual(r.status_code, 400)
+
+    def test_username_con_caracteres_invalidos_rechazado(self):
+        r = self._post({'nombre': 'Juan', 'username': 'ju@n!', 'password': 'abc123', 'es_admin': False})
+        self.assertEqual(r.status_code, 400)
+        self.assertFalse(r.json()['ok'])
+
+    def test_username_con_espacios_rechazado(self):
+        r = self._post({'nombre': 'Juan', 'username': 'ju an', 'password': 'abc123', 'es_admin': False})
+        self.assertEqual(r.status_code, 400)
+
+    def test_username_guion_bajo_permitido(self):
+        r = self._post({'nombre': 'Juan', 'username': 'ju_an_99', 'password': 'abc123', 'es_admin': False})
+        self.assertTrue(r.json()['ok'])
+
+    def test_nombre_demasiado_largo_rechazado(self):
+        r = self._post({'nombre': 'A' * 101, 'username': 'juan2', 'password': 'abc123', 'es_admin': False})
+        self.assertEqual(r.status_code, 400)
+
+    def test_username_demasiado_largo_rechazado(self):
+        r = self._post({'nombre': 'Juan', 'username': 'a' * 51, 'password': 'abc123', 'es_admin': False})
+        self.assertEqual(r.status_code, 400)
+
+    def test_password_demasiado_larga_rechazada(self):
+        r = self._post({'nombre': 'Juan', 'username': 'juan3', 'password': 'a' * 101, 'es_admin': False})
         self.assertEqual(r.status_code, 400)

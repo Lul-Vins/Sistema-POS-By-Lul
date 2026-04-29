@@ -158,15 +158,18 @@
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold text-muted">Teléfono <small class="fw-normal">(opcional)</small></label>
-          <input type="text" id="cliente-telefono" class="form-control" placeholder="Ej: 0414-1234567" maxlength="20">
+          <input type="text" id="cliente-telefono" class="form-control" placeholder="Ej: 04141234567"
+                 maxlength="20" inputmode="numeric">
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold text-muted">Dirección <small class="fw-normal">(opcional)</small></label>
-          <input type="text" id="cliente-direccion" class="form-control" placeholder="Ej: Calle Bolívar, casa #5">
+          <input type="text" id="cliente-direccion" class="form-control" placeholder="Ej: Calle Bolívar, casa #5"
+                 maxlength="300">
         </div>
         <div class="mb-3">
           <label class="form-label fw-semibold text-muted">Notas <small class="fw-normal">(opcional)</small></label>
-          <textarea id="cliente-notas" class="form-control" rows="2" placeholder="Referencias, observaciones..."></textarea>
+          <textarea id="cliente-notas" class="form-control" rows="2" placeholder="Referencias, observaciones..."
+                    maxlength="500"></textarea>
         </div>
 
         <div id="cliente-feedback" class="text-danger mb-2" style="font-size:.85rem; min-height:1.1rem;"></div>
@@ -215,16 +218,22 @@
   }
 
   document.getElementById('btn-guardar-cliente').addEventListener('click', function () {
+    guardarCliente(false);
+  });
+
+  function guardarCliente(forzar) {
+    const btn      = document.getElementById('btn-guardar-cliente');
     const feedback = document.getElementById('cliente-feedback');
     const nombre   = document.getElementById('cliente-nombre').value.trim();
+
     if (!nombre) {
       feedback.textContent = 'El nombre es obligatorio.';
       document.getElementById('cliente-nombre').focus();
       return;
     }
 
-    this.disabled  = true;
-    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+    btn.disabled  = true;
+    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
     feedback.textContent = '';
 
     fetch(URL_CREAR, {
@@ -235,26 +244,92 @@
         telefono:  document.getElementById('cliente-telefono').value.trim(),
         direccion: document.getElementById('cliente-direccion').value.trim(),
         notas:     document.getElementById('cliente-notas').value.trim(),
+        forzar:    forzar,
       }),
     })
       .then(r => r.json())
       .then(data => {
         if (data.ok) {
-          window.location = data.url;
+          modal.hide();
+          mostrarBannerExito(data);
+          agregarFilaCliente(data);
+        } else if (data.advertencia) {
+          if (confirm(data.error)) guardarCliente(true);
         } else {
           feedback.textContent = data.error || 'Error al guardar.';
         }
       })
       .catch(() => { feedback.textContent = 'Error de conexión.'; })
       .finally(() => {
-        this.disabled  = false;
-        this.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar cliente';
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar cliente';
       });
+  }
+
+  function mostrarBannerExito(data) {
+    // Eliminar banner anterior si existe
+    const anterior = document.getElementById('banner-cliente-ok');
+    if (anterior) anterior.remove();
+
+    const banner = document.createElement('div');
+    banner.id = 'banner-cliente-ok';
+    banner.className = 'alert alert-success d-flex align-items-center gap-2 mb-3';
+    banner.style.borderRadius = '10px';
+    banner.innerHTML = `
+      <i class="bi bi-check-circle-fill flex-shrink-0"></i>
+      <span>Cliente <strong>${data.nombre}</strong> registrado.
+        <a href="${data.url}" class="alert-link ms-1">Ver ficha →</a>
+      </span>
+      <button type="button" class="btn-close ms-auto" onclick="this.parentElement.remove()"></button>
+    `;
+    // Insertar arriba de la tabla/buscador
+    const buscador = document.getElementById('buscador-clientes');
+    buscador.parentElement.insertBefore(banner, buscador.parentElement.firstChild);
+    // Auto-cerrar tras 6s
+    setTimeout(() => { if (banner.isConnected) banner.remove(); }, 6000);
+  }
+
+  function agregarFilaCliente(data) {
+    const tbody = document.querySelector('#tabla-clientes tbody');
+    if (!tbody) {
+      // Primera vez: recargar para mostrar la tabla correctamente
+      setTimeout(() => location.reload(), 800);
+      return;
+    }
+    const tr = document.createElement('tr');
+    tr.className = 'cliente-row';
+    tr.dataset.nombre = data.nombre.toLowerCase();
+    tr.dataset.tel    = (data.telefono || '').toLowerCase();
+    tr.onclick = () => window.location = data.url;
+    tr.style.cssText  = 'background:#f0fdf4; transition:background 2s ease;';
+    tr.innerHTML = `
+      <td><div class="fw-semibold">${data.nombre}</div></td>
+      <td class="text-muted">${data.telefono || '—'}</td>
+      <td class="text-end fw-bold"><span class="text-muted">$ 0.00</span></td>
+      <td class="text-center text-muted">0</td>
+      <td class="text-center"><span class="badge saldo-badge-cero">Al día</span></td>
+    `;
+    tbody.appendChild(tr);
+    // Quitar el verde gradualmente (simula highlight que desaparece)
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => { tr.style.background = ''; });
+    });
+  }
+
+  // Solo dígitos en teléfono
+  document.getElementById('cliente-telefono').addEventListener('input', function () {
+    this.value = this.value.replace(/\D/g, '');
   });
 
   // Enter en nombre guarda
   document.getElementById('cliente-nombre').addEventListener('keydown', e => {
     if (e.key === 'Enter') document.getElementById('btn-guardar-cliente').click();
+  });
+
+  // Recalcular saldos si el admin actualiza la tasa BCV
+  window.onTasaActualizada = () => location.reload();
+  window.addEventListener('storage', e => {
+    if (e.key === 'pos_tasa_actualizada') location.reload();
   });
 </script>
 {% endblock %}

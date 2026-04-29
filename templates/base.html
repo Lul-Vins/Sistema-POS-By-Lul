@@ -1,3 +1,4 @@
+{% load static %}
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -5,10 +6,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>{% block titulo %}POS{% endblock %} — {{ empresa.nombre|default:"POS Core" }}</title>
 
-  <!-- Bootstrap 5 -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
-  <!-- Bootstrap Icons -->
-  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
+  <!-- Bootstrap 5 (local) -->
+  <link href="{% static 'vendor/bootstrap/css/bootstrap.min.css' %}" rel="stylesheet">
+  <!-- Bootstrap Icons (local) -->
+  <link href="{% static 'vendor/bootstrap-icons/css/bootstrap-icons.min.css' %}" rel="stylesheet">
 
   <style>
     /* ── Tipografía global ─────────────────────────────────── */
@@ -62,6 +63,29 @@
     .tasa-badge .bi-pencil-fill {
       font-size: 0.7rem;
       opacity: 0.8;
+    }
+
+    /* ── Botón apagar ──────────────────────────────────────── */
+    .btn-apagar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(220, 53, 69, 0.45);
+      background: transparent;
+      color: rgba(220, 53, 69, 0.75);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .btn-apagar:hover {
+      background: rgba(220, 53, 69, 0.15);
+      border-color: #dc3545;
+      color: #dc3545;
     }
 
     /* ── Contenido principal ───────────────────────────────── */
@@ -282,7 +306,7 @@
     {% block contenido %}{% endblock %}
   </div>
 
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="{% static 'vendor/bootstrap/js/bootstrap.bundle.min.js' %}"></script>
 
   <script>
     // ── Modal de tasa BCV ───────────────────────────────────
@@ -345,6 +369,10 @@
               window.onTasaActualizada(data.tasa);
             }
 
+            // Notificar a otras pestañas (ej. el POS abierto por el cajero)
+            // para que recarguen y desbloqueen el carrito automáticamente.
+            localStorage.setItem('pos_tasa_actualizada', Date.now());
+
             mostrarFeedback('Tasa actualizada correctamente.', 'ok');
 
             // Cerrar el modal tras 1 segundo
@@ -365,6 +393,12 @@
     function mostrarFeedback(msg, tipo) {
       feedback.textContent = msg;
       feedback.className   = `feedback mt-2 ${tipo === 'ok' ? 'text-success' : 'text-danger'}`;
+    }
+
+    // ── Apagar / cerrar la aplicación ────────────────────────
+    function apagarApp() {
+      if (!confirm('¿Cerrar la aplicación?')) return;
+      window.close();
     }
   </script>
 

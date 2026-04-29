@@ -1,0 +1,858 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configuración — Sinag</title>
+
+  <!-- Bootstrap 5 (local) -->
+  <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons (local) -->
+  <link href="/static/vendor/bootstrap-icons/css/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    /* ── Tipografía global ─────────────────────────────────── */
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 1.05rem;
+      background-color: #f4f6f9;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────── */
+    .navbar-pos {
+      background-color: #1a1a2e;
+      min-height: 58px;
+    }
+    .navbar-pos .navbar-brand {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+    .navbar-pos .nav-link {
+      color: #c8cdd8;
+      font-size: 0.95rem;
+    }
+    .navbar-pos .nav-link:hover,
+    .navbar-pos .nav-link.active {
+      color: #ffffff;
+    }
+
+    /* Badge de tasa — clickeable */
+    .tasa-badge {
+      background-color: #2d6a4f;
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tasa-badge:hover {
+      background-color: #1b4332;
+    }
+    .tasa-badge.sin-tasa {
+      background-color: #842029;
+    }
+    .tasa-badge .bi-pencil-fill {
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+
+    /* ── Botón apagar ──────────────────────────────────────── */
+    .btn-apagar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(220, 53, 69, 0.45);
+      background: transparent;
+      color: rgba(220, 53, 69, 0.75);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .btn-apagar:hover {
+      background: rgba(220, 53, 69, 0.15);
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    /* ── Contenido principal ───────────────────────────────── */
+    .content-wrapper {
+      padding-top: 1.5rem;
+      padding-bottom: 2rem;
+    }
+
+    /* ── Modal de tasa ─────────────────────────────────────── */
+    .modal-tasa .modal-header {
+      background-color: #1a1a2e;
+      color: #fff;
+      border-bottom: none;
+    }
+    .modal-tasa .btn-close {
+      filter: invert(1);
+    }
+    .modal-tasa .tasa-actual-display {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #2d6a4f;
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+    .modal-tasa .ultima-act {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .modal-tasa .input-nueva-tasa {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 0.5rem;
+    }
+    .modal-tasa .input-nueva-tasa:focus {
+      border-color: #2d6a4f;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.15);
+    }
+    .modal-tasa .nota-bcv {
+      font-size: 0.78rem;
+      color: #6c757d;
+      background-color: #f8f9fa;
+      border-left: 3px solid #ffc107;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-top: 0.75rem;
+    }
+    .modal-tasa .btn-guardar-tasa {
+      background-color: #2d6a4f;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .modal-tasa .btn-guardar-tasa:hover {
+      background-color: #1b4332;
+    }
+    .modal-tasa .feedback {
+      font-size: 0.85rem;
+      min-height: 1.2rem;
+      text-align: center;
+    }
+  </style>
+
+  
+<style>
+  .config-card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.07);
+    margin-bottom: 1.5rem;
+  }
+
+  .config-section-title {
+    font-size: 1rem;
+    font-weight: 700;
+    color: #1a1a2e;
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    margin-bottom: 1.5rem;
+    padding-bottom: .75rem;
+    border-bottom: 2px solid #f0f0f0;
+    display: flex;
+    align-items: center;
+    gap: .5rem;
+  }
+
+  .logo-preview-wrap {
+    width: 120px;
+    height: 120px;
+    border-radius: 10px;
+    border: 2px dashed #dee2e6;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    background: #f8f9fa;
+    flex-shrink: 0;
+  }
+
+  .logo-preview-wrap img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+  }
+
+  .logo-placeholder {
+    color: #adb5bd;
+    font-size: 2.5rem;
+  }
+
+  .campo-label {
+    font-size: .85rem;
+    font-weight: 600;
+    color: #6c757d;
+    margin-bottom: .35rem;
+  }
+
+  .campo-input {
+    border: 1.5px solid #dee2e6;
+    border-radius: 8px;
+    padding: .55rem .75rem;
+    font-size: .95rem;
+    transition: border-color .15s;
+  }
+
+  .campo-input:focus {
+    border-color: #2d6a4f;
+    box-shadow: 0 0 0 3px rgba(45,106,79,.12);
+    outline: none;
+  }
+
+  .btn-guardar-config {
+    background-color: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: .6rem 2rem;
+    font-size: 1rem;
+    font-weight: 700;
+    transition: background-color .15s;
+  }
+
+  .btn-guardar-config:hover {
+    background-color: #1b4332;
+    color: #fff;
+  }
+
+  .tasa-display {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #2d6a4f;
+  }
+
+  .tasa-sub {
+    font-size: .82rem;
+    color: #6c757d;
+  }
+
+  .check-limpiar-logo {
+    font-size: .82rem;
+    color: #dc3545;
+    display: flex;
+    align-items: center;
+    gap: .4rem;
+    margin-top: .5rem;
+  }
+</style>
+
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg navbar-pos px-3">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-shop me-2"></i>Sinag
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto ms-3 gap-1">
+        <li class="nav-item">
+          <a class="nav-link " href="/">
+            <i class="bi bi-cart3 me-1"></i>Venta
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link " href="/inventario/">
+            <i class="bi bi-box-seam me-1"></i>Inventario
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="/reportes/">
+            <i class="bi bi-bar-chart-line me-1"></i>Reportes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="/fiados/">
+            <i class="bi bi-people me-1"></i>Fiados
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link active" href="/configuracion/">
+            <i class="bi bi-gear me-1"></i>Configuración
+          </a>
+        </li>
+        
+      </ul>
+
+      <!-- Badge de tasa: clickeable para editar (solo admin) -->
+      
+      <button
+        class="tasa-badge me-3 "
+        id="btn-abrir-tasa"
+        data-bs-toggle="modal"
+        data-bs-target="#modalTasa"
+        title="Clic para actualizar tasa BCV"
+      >
+        <i class="bi bi-currency-dollar"></i>
+        <span id="tasa-navbar-texto">
+          1 = Bs. 600,00
+        </span>
+        <i class="bi bi-pencil-fill"></i>
+      </button>
+      
+
+      <!-- Usuario y logout -->
+      
+      <div class="d-flex align-items-center gap-2 me-2">
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+          <i class="bi bi-person-fill me-1"></i>
+          Jose
+          <span class="opacity-75 ms-1 small">Admin</span>
+        </span>
+        <form method="post" action="/logout/" class="d-inline m-0">
+          <input type="hidden" name="csrfmiddlewaretoken" value="D3ntlmJaymiYFm5IXFKOQsUptC3sxYqQVVNfgoONkPWYU52Ag8SbvZhdBfRLcqfm">
+          <button type="submit" class="btn btn-outline-light btn-sm" title="Cerrar sesión">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </form>
+      </div>
+      
+
+    </div>
+  </nav>
+  <!-- ══ FIN NAVBAR ═══════════════════════════════════════════ -->
+
+
+  <!-- ══ MODAL: ACTUALIZAR TASA BCV ══════════════════════════ -->
+  <div class="modal fade modal-tasa" id="modalTasa" tabindex="-1" aria-labelledby="modalTasaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTasaLabel">
+            <i class="bi bi-bank me-2"></i>Tasa BCV
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="tasa-actual-display" id="tasa-actual-display">
+            Bs. 600,00
+          </div>
+          <div class="ultima-act" id="ultima-act">
+            Última actualización: 27/04/2026 20:12
+          </div>
+
+          <label class="form-label fw-semibold">Nueva tasa del día</label>
+          <input
+            type="number"
+            id="input-nueva-tasa"
+            class="form-control input-nueva-tasa"
+            placeholder="Ej: 471.50"
+            min="0.01"
+            step="0.01"
+          >
+
+          <div class="nota-bcv mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            La tasa BCV se publica de lunes a viernes entre 4–5 pm y entra en vigencia el siguiente día hábil.
+          </div>
+
+          <div class="feedback mt-2" id="tasa-feedback"></div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-guardar-tasa w-100" id="btn-guardar-tasa">
+            <i class="bi bi-check-lg me-1"></i>Guardar tasa
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ══ FIN MODAL TASA ═══════════════════════════════════════ -->
+
+
+  <div class="content-wrapper container-fluid">
+    
+
+<div style="margin-bottom: 2rem;">
+  <h4 class="fw-bold">
+    <i class="bi bi-gear me-2 text-muted"></i>Configuración
+  </h4>
+</div>
+
+
+
+<div style="max-width: 680px;">
+
+  <!-- ── Datos de la empresa ──────────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-building"></i> Datos de la empresa
+    </div>
+
+    <form method="post" enctype="multipart/form-data">
+      <input type="hidden" name="csrfmiddlewaretoken" value="D3ntlmJaymiYFm5IXFKOQsUptC3sxYqQVVNfgoONkPWYU52Ag8SbvZhdBfRLcqfm">
+
+      <!-- Logo -->
+      <div class="d-flex gap-3 align-items-start mb-4">
+        <div class="logo-preview-wrap" id="logo-preview-wrap">
+          
+            <img src="/media/empresa/PIPO_YEjCcOE.PNG" id="logo-img" alt="Logo">
+          
+        </div>
+
+        <div style="flex: 1;">
+          <label class="campo-label" for="id_logo">Logo de la empresa</label>
+          <input type="file" name="logo" id="id_logo" accept="image/*"
+                 class="form-control campo-input" style="padding: .4rem .6rem;">
+          <div style="font-size: .78rem; color: #6c757d; margin-top: .3rem;">
+            PNG, JPG o SVG. Se mostrará en facturas e impresiones.
+          </div>
+          
+          <label class="check-limpiar-logo mt-2">
+            <input type="checkbox" name="limpiar_logo" value="1"> Eliminar logo actual
+          </label>
+          
+        </div>
+      </div>
+
+      <!-- Nombre y RIF -->
+      <div class="row g-3 mb-3">
+        <div class="col-sm-7">
+          <label class="campo-label" for="id_nombre">Nombre / Razón social <span class="text-danger">*</span></label>
+          <input type="text" name="nombre" id="id_nombre"
+                 value="Sinag"
+                 class="form-control campo-input" required placeholder="Ej: Farmacia El Rosal">
+        </div>
+        <div class="col-sm-5">
+          <label class="campo-label" for="id_rif">RIF <span class="text-danger">*</span></label>
+          <div class="input-group">
+            <span class="input-group-text fw-bold">J</span>
+            <input type="text" name="rif" id="id_rif"
+                   value="123456789"
+                   class="form-control campo-input" required
+                   placeholder="123456789" maxlength="9"
+                   inputmode="numeric" pattern="[0-9]{9}"
+                   title="9 dígitos numéricos">
+          </div>
+        </div>
+      </div>
+
+      <!-- Teléfono -->
+      <div class="mb-3">
+        <label class="campo-label" for="id_telefono">Teléfono</label>
+        <input type="tel" name="telefono" id="id_telefono"
+               value=""
+               class="form-control campo-input" placeholder="Ej: 04121234567"
+               maxlength="11" inputmode="numeric" pattern="[0-9]{11}"
+               title="11 dígitos numéricos">
+      </div>
+
+      <!-- Dirección -->
+      <div class="mb-4">
+        <label class="campo-label" for="id_direccion">Dirección</label>
+        <textarea name="direccion" id="id_direccion" rows="2"
+                  class="form-control campo-input"
+                  placeholder="Av. Principal, Local 1, Caracas"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-guardar-config">
+        <i class="bi bi-check-lg me-1"></i>Guardar cambios
+      </button>
+    </form>
+  </div>
+
+  <!-- ── Impresora de tickets ────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-printer"></i> Impresora de tickets
+    </div>
+
+    <!-- Toggle activar/desactivar -->
+    <div class="d-flex align-items-center justify-content-between gap-3 mb-3">
+      <div>
+        <div style="font-size:.95rem; font-weight:600; color:#1a1a2e;">
+          Imprimir ticket automáticamente al cobrar
+        </div>
+        <div style="font-size:.82rem; color:#6c757d; margin-top:2px;">
+          Envía el ticket directo a la impresora térmica (80 mm) sin diálogos.
+          Actívalo solo si tienes la impresora conectada.
+        </div>
+      </div>
+      <div class="form-check form-switch" style="padding:0; flex-shrink:0;">
+        <input class="form-check-input" type="checkbox" role="switch"
+               id="toggle-impresora" style="width:3rem; height:1.5rem; cursor:pointer;"
+               >
+      </div>
+    </div>
+
+    <!-- Selector de impresora -->
+    <div id="bloque-impresora" style="display:none;">
+      <label class="campo-label">Impresora térmica</label>
+      <div class="d-flex gap-2 mb-2">
+        <select id="select-impresora" class="form-select campo-input" style="font-size:.9rem;">
+          <option value="">— Selecciona una impresora —</option>
+          
+          <option value="Microsoft Print to PDF" selected>Microsoft Print to PDF</option>
+          
+        </select>
+        <button type="button" id="btn-listar" class="btn btn-outline-secondary"
+                title="Buscar impresoras instaladas" style="white-space:nowrap;">
+          <i class="bi bi-arrow-repeat"></i>
+        </button>
+      </div>
+      <div class="d-flex gap-2">
+        <button type="button" id="btn-guardar-impresora"
+                class="btn btn-guardar-config btn-sm px-3">
+          <i class="bi bi-check-lg me-1"></i>Guardar
+        </button>
+        <button type="button" id="btn-test-impresora"
+                class="btn btn-outline-secondary btn-sm px-3">
+          <i class="bi bi-printer me-1"></i>Imprimir prueba
+        </button>
+      </div>
+    </div>
+
+    <div id="ticket-feedback" style="font-size:.82rem; min-height:1.1rem; margin-top:.75rem;"></div>
+  </div>
+
+  <!-- ── Usuarios ────────────────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-people-fill"></i> Usuarios del sistema
+    </div>
+    <div class="d-flex align-items-center justify-content-between">
+      <div class="text-muted" style="font-size:.9rem;">
+        Administra quién puede acceder al POS y con qué rol.
+      </div>
+      <a href="/configuracion/usuarios/" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-people me-1"></i>Gestionar usuarios
+      </a>
+    </div>
+  </div>
+
+  <!-- ── Backup ───────────────────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-database-fill-down"></i> Respaldo de datos
+    </div>
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <div class="text-muted" style="font-size:.9rem;">
+          Copia la base de datos al <strong>Escritorio</strong> con la fecha y hora actual.<br>
+          <small>Archivo: <code>pos_backup_YYYYMMDD_HHMM.sqlite3</code></small>
+        </div>
+        <div id="backup-resultado" class="mt-2" style="font-size:.85rem; min-height:1.2rem;"></div>
+      </div>
+      <button id="btn-backup" class="btn btn-outline-success">
+        <i class="bi bi-download me-1"></i>Hacer respaldo ahora
+      </button>
+    </div>
+  </div>
+
+  <!-- ── Tasa de cambio ──────────────────────────────────── -->
+  <div class="config-card">
+    <div class="config-section-title">
+      <i class="bi bi-currency-dollar"></i> Tasa de cambio
+    </div>
+
+    <div class="d-flex align-items-center justify-content-between">
+      <div>
+        
+          <div class="tasa-display">Bs. 600,00</div>
+          <div class="tasa-sub">Última actualización: 27/04/2026 20:12</div>
+        
+      </div>
+      <button class="btn btn-outline-secondary"
+              data-bs-toggle="modal" data-bs-target="#modalTasa">
+        <i class="bi bi-pencil me-1"></i>Actualizar tasa
+      </button>
+    </div>
+  </div>
+
+</div>
+
+  </div>
+
+  <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ── Modal de tasa BCV ───────────────────────────────────
+    const URL_ACTUALIZAR_TASA = "/configuracion/tasa/actualizar/";
+    const CSRF_TOKEN = "D3ntlmJaymiYFm5IXFKOQsUptC3sxYqQVVNfgoONkPWYU52Ag8SbvZhdBfRLcqfm";
+
+    const inputTasa   = document.getElementById('input-nueva-tasa');
+    const btnGuardar  = document.getElementById('btn-guardar-tasa');
+    const feedback    = document.getElementById('tasa-feedback');
+
+    // Limpiar feedback al abrir el modal
+    document.getElementById('modalTasa').addEventListener('show.bs.modal', () => {
+      feedback.textContent = '';
+      feedback.className   = 'feedback mt-2';
+      inputTasa.value      = '';
+      inputTasa.focus();
+    });
+
+    // Focus al input cuando el modal termina de abrir
+    document.getElementById('modalTasa').addEventListener('shown.bs.modal', () => {
+      inputTasa.focus();
+    });
+
+    // Guardar con Enter
+    inputTasa.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnGuardar.click();
+    });
+
+    btnGuardar.addEventListener('click', () => {
+      const valor = parseFloat(inputTasa.value);
+
+      if (!valor || valor <= 0) {
+        mostrarFeedback('Ingresa una tasa válida mayor a 0.', 'error');
+        return;
+      }
+
+      btnGuardar.disabled = true;
+      btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+      fetch(URL_ACTUALIZAR_TASA, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN,
+        },
+        body: JSON.stringify({ tasa: valor }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            // Actualizar navbar y display del modal sin recargar
+            const textoTasa = `1 = Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('tasa-navbar-texto').textContent = textoTasa;
+            document.getElementById('btn-abrir-tasa').classList.remove('sin-tasa');
+            document.getElementById('tasa-actual-display').textContent = `Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('ultima-act').textContent = `Última actualización: ${data.ultima_actualizacion}`;
+
+            // Notificar a la página activa para que recalcule precios y carrito
+            if (typeof window.onTasaActualizada === 'function') {
+              window.onTasaActualizada(data.tasa);
+            }
+
+            // Notificar a otras pestañas (ej. el POS abierto por el cajero)
+            // para que recarguen y desbloqueen el carrito automáticamente.
+            localStorage.setItem('pos_tasa_actualizada', Date.now());
+
+            mostrarFeedback('Tasa actualizada correctamente.', 'ok');
+
+            // Cerrar el modal tras 1 segundo
+            setTimeout(() => {
+              bootstrap.Modal.getInstance(document.getElementById('modalTasa')).hide();
+            }, 1000);
+          } else {
+            mostrarFeedback(data.error || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => mostrarFeedback('Error de conexión.', 'error'))
+        .finally(() => {
+          btnGuardar.disabled = false;
+          btnGuardar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar tasa';
+        });
+    });
+
+    function mostrarFeedback(msg, tipo) {
+      feedback.textContent = msg;
+      feedback.className   = `feedback mt-2 ${tipo === 'ok' ? 'text-success' : 'text-danger'}`;
+    }
+
+    // ── Apagar / cerrar la aplicación ────────────────────────
+    function apagarApp() {
+      if (!confirm('¿Cerrar la aplicación?')) return;
+      window.close();
+    }
+  </script>
+
+  
+<script>
+  // ── Backup de base de datos ───────────────────────────────────
+  document.getElementById('btn-backup').addEventListener('click', function () {
+    const btn       = this;
+    const resultado = document.getElementById('backup-resultado');
+
+    btn.disabled    = true;
+    btn.innerHTML   = '<span class="spinner-border spinner-border-sm me-1"></span>Respaldando...';
+    resultado.innerHTML = '';
+
+    fetch("/configuracion/backup/", {
+      method:  'POST',
+      headers: { 'X-CSRFToken': 'D3ntlmJaymiYFm5IXFKOQsUptC3sxYqQVVNfgoONkPWYU52Ag8SbvZhdBfRLcqfm' },
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          resultado.innerHTML =
+            `<span class="text-success"><i class="bi bi-check-circle-fill me-1"></i>
+             Respaldo guardado en: <strong>${data.ruta}</strong></span>`;
+        } else {
+          resultado.innerHTML =
+            `<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>${data.error}</span>`;
+        }
+      })
+      .catch(() => {
+        resultado.innerHTML =
+          '<span class="text-danger"><i class="bi bi-x-circle-fill me-1"></i>Error de conexión.</span>';
+      })
+      .finally(() => {
+        btn.disabled  = false;
+        btn.innerHTML = '<i class="bi bi-download me-1"></i>Hacer respaldo ahora';
+      });
+  });
+
+  // Preview de logo al seleccionar archivo
+  document.getElementById('id_logo').addEventListener('change', function () {
+    const file = this.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.getElementById('logo-img');
+      const placeholder = document.getElementById('logo-placeholder');
+      img.src = e.target.result;
+      img.style.display = 'block';
+      if (placeholder) placeholder.style.display = 'none';
+    };
+    reader.readAsDataURL(file);
+  });
+
+  // Solo dígitos en RIF y teléfono
+  ['id_rif', 'id_telefono'].forEach(id => {
+    document.getElementById(id).addEventListener('input', function () {
+      this.value = this.value.replace(/\D/g, '');
+    });
+  });
+
+  const CSRF             = 'D3ntlmJaymiYFm5IXFKOQsUptC3sxYqQVVNfgoONkPWYU52Ag8SbvZhdBfRLcqfm';
+  const URL_TOGGLE       = "/configuracion/impresora/toggle/";
+  const URL_LISTAR       = "/configuracion/impresora/listar/";
+  const URL_GUARDAR_IMP  = "/configuracion/impresora/guardar/";
+  const URL_TEST         = "/configuracion/impresora/test/";
+  const feedbackImp      = document.getElementById('ticket-feedback');
+  const bloqueImpresora  = document.getElementById('bloque-impresora');
+  const selectImpresora  = document.getElementById('select-impresora');
+
+  function mostrarFeedbackImp(msg, ok) {
+    feedbackImp.textContent = msg;
+    feedbackImp.style.color = ok ? '#2d6a4f' : '#dc3545';
+    if (ok) setTimeout(() => { feedbackImp.textContent = ''; }, 3000);
+  }
+
+  // Toggle activar/desactivar
+  document.getElementById('toggle-impresora').addEventListener('change', function () {
+    const activado = this.checked;
+    bloqueImpresora.style.display = activado ? '' : 'none';
+
+    fetch(URL_TOGGLE, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ activado }),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          mostrarFeedbackImp(activado ? 'Impresión automática activada.' : 'Impresión automática desactivada.', true);
+        } else {
+          mostrarFeedbackImp(data.error || 'Error al guardar.', false);
+          this.checked = !activado;
+          bloqueImpresora.style.display = !activado ? '' : 'none';
+        }
+      })
+      .catch(() => { mostrarFeedbackImp('Error de conexión.', false); this.checked = !activado; });
+  });
+
+  // Listar impresoras instaladas en Windows
+  document.getElementById('btn-listar').addEventListener('click', function () {
+    this.innerHTML = '<span class="spinner-border spinner-border-sm"></span>';
+    this.disabled  = true;
+
+    fetch(URL_LISTAR)
+      .then(r => r.json())
+      .then(data => {
+        const actual = selectImpresora.value;
+        selectImpresora.innerHTML = '<option value="">— Selecciona una impresora —</option>';
+        data.impresoras.forEach(nombre => {
+          const opt      = document.createElement('option');
+          opt.value      = nombre;
+          opt.textContent = nombre;
+          if (nombre === actual || nombre === data.predeterminada) opt.selected = true;
+          selectImpresora.appendChild(opt);
+        });
+        if (data.impresoras.length === 0) {
+          mostrarFeedbackImp('No se encontraron impresoras instaladas.', false);
+        }
+      })
+      .catch(() => mostrarFeedbackImp('Error al listar impresoras.', false))
+      .finally(() => {
+        this.innerHTML = '<i class="bi bi-arrow-repeat"></i>';
+        this.disabled  = false;
+      });
+  });
+
+  // Guardar nombre de impresora
+  document.getElementById('btn-guardar-impresora').addEventListener('click', function () {
+    const nombre = selectImpresora.value.trim();
+    if (!nombre) { mostrarFeedbackImp('Selecciona una impresora.', false); return; }
+
+    fetch(URL_GUARDAR_IMP, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({ nombre }),
+    })
+      .then(r => r.json())
+      .then(data => mostrarFeedbackImp(data.ok ? 'Impresora guardada.' : (data.error || 'Error.'), data.ok))
+      .catch(() => mostrarFeedbackImp('Error de conexión.', false));
+  });
+
+  // Test de impresión
+  document.getElementById('btn-test-impresora').addEventListener('click', function () {
+    this.disabled  = true;
+    this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Imprimiendo...';
+
+    fetch(URL_TEST, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF },
+      body: JSON.stringify({}),
+    })
+      .then(r => r.json())
+      .then(data => mostrarFeedbackImp(data.ok ? '✓ Prueba enviada a la impresora.' : (data.error || 'Error.'), data.ok))
+      .catch(() => mostrarFeedbackImp('Error de conexión.', false))
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-printer me-1"></i>Imprimir prueba';
+      });
+  });
+</script>
+
+</body>
+</html>

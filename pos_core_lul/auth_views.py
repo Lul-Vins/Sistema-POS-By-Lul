@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, redirect
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
@@ -30,6 +31,14 @@ def login_view(request):
 
             if not nombre or not username or not password:
                 error = 'Completa todos los campos.'
+            elif len(nombre) > 100:
+                error = 'El nombre no puede superar 100 caracteres.'
+            elif len(username) > 50:
+                error = 'El usuario no puede superar 50 caracteres.'
+            elif not re.match(r'^[a-zA-Z0-9_]+$', username):
+                error = 'El usuario solo puede contener letras, números y guión bajo.'
+            elif len(password) > 100:
+                error = 'La contraseña no puede superar 100 caracteres.'
             elif password != password2:
                 error = 'Las contraseñas no coinciden.'
             elif len(password) < 4:

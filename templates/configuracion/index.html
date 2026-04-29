@@ -171,7 +171,8 @@
           <label class="campo-label" for="id_nombre">Nombre / Razón social <span class="text-danger">*</span></label>
           <input type="text" name="nombre" id="id_nombre"
                  value="{{ post_data.nombre|default:empresa.nombre }}"
-                 class="form-control campo-input" required placeholder="Ej: Farmacia El Rosal">
+                 class="form-control campo-input" required placeholder="Ej: Farmacia El Rosal"
+                 maxlength="200">
         </div>
         <div class="col-sm-5">
           <label class="campo-label" for="id_rif">RIF <span class="text-danger">*</span></label>
@@ -201,7 +202,7 @@
       <div class="mb-4">
         <label class="campo-label" for="id_direccion">Dirección</label>
         <textarea name="direccion" id="id_direccion" rows="2"
-                  class="form-control campo-input"
+                  class="form-control campo-input" maxlength="500"
                   placeholder="Av. Principal, Local 1, Caracas">{{ post_data.direccion|default:empresa.direccion }}</textarea>
       </div>
 

@@ -160,22 +160,24 @@
     <div class="mb-3">
       <label class="form-label">Nombre completo</label>
       <input type="text" name="nombre" class="form-control" placeholder="Ej: María González"
-             value="{{ request.POST.nombre|default:'' }}" autofocus required>
+             value="{{ request.POST.nombre|default:'' }}" autofocus required maxlength="100">
     </div>
     <div class="mb-3">
       <label class="form-label">Nombre de usuario</label>
-      <input type="text" name="username" class="form-control" placeholder="Ej: admin"
-             value="{{ request.POST.username|default:'' }}" autocomplete="off" required>
+      <input type="text" name="username" id="setup-username" class="form-control" placeholder="Ej: admin"
+             value="{{ request.POST.username|default:'' }}" autocomplete="off" required
+             maxlength="50" pattern="[a-zA-Z0-9_]+" title="Solo letras, números y guión bajo">
+      <div style="font-size:.78rem; color:#6c757d; margin-top:.2rem;">Solo letras, números y guión bajo. Sin espacios.</div>
     </div>
     <div class="mb-3">
       <label class="form-label">Contraseña</label>
       <input type="password" name="password" class="form-control"
-             placeholder="Mínimo 4 caracteres" autocomplete="new-password" required>
+             placeholder="Mínimo 4 caracteres" autocomplete="new-password" required maxlength="100">
     </div>
     <div class="mb-3">
       <label class="form-label">Confirmar contraseña</label>
       <input type="password" name="password2" class="form-control"
-             placeholder="Repite la contraseña" autocomplete="new-password" required>
+             placeholder="Repite la contraseña" autocomplete="new-password" required maxlength="100">
     </div>
 
     <button type="submit" class="btn-login">
@@ -200,12 +202,12 @@
       <input type="text" name="username" class="form-control"
              placeholder="Nombre de usuario"
              value="{{ request.POST.username|default:'' }}"
-             autofocus autocomplete="username" required>
+             autofocus autocomplete="username" required maxlength="50">
     </div>
     <div class="mb-3">
       <label class="form-label">Contraseña</label>
       <input type="password" name="password" class="form-control"
-             placeholder="Contraseña" autocomplete="current-password" required>
+             placeholder="Contraseña" autocomplete="current-password" required maxlength="100">
     </div>
 
     <button type="submit" class="btn-login">
@@ -217,5 +219,14 @@
   <div class="pie-login">{{ empresa.nombre|default:"POS Core" }} — Sistema de Punto de Venta</div>
 </div>
 
+<script>
+  // Enforce alphanumeric+underscore on setup username
+  const su = document.getElementById('setup-username');
+  if (su) {
+    su.addEventListener('input', function () {
+      this.value = this.value.replace(/[^a-zA-Z0-9_]/g, '');
+    });
+  }
+</script>
 </body>
 </html>

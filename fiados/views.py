@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, get_object_or_404
 from django.http import JsonResponse
 from django.views.decorators.http import require_POST
@@ -99,22 +100,43 @@ def cliente_detail(request, pk):
 @require_POST
 def crear_cliente(request):
     try:
-        data   = json.loads(request.body)
-        nombre = data.get('nombre', '').strip()
+        data      = json.loads(request.body)
+        nombre    = data.get('nombre', '').strip()
+        telefono  = re.sub(r'\D', '', data.get('telefono', '').strip())
+        direccion = data.get('direccion', '').strip()
+        notas     = data.get('notas', '').strip()
+        forzar    = data.get('forzar', False)
+
         if not nombre:
             return JsonResponse({'ok': False, 'error': 'El nombre es obligatorio.'}, status=400)
+        if len(nombre) > 200:
+            return JsonResponse({'ok': False, 'error': 'El nombre no puede superar 200 caracteres.'}, status=400)
+        if len(telefono) > 20:
+            return JsonResponse({'ok': False, 'error': 'El teléfono no puede superar 20 dígitos.'}, status=400)
+        if len(direccion) > 300:
+            return JsonResponse({'ok': False, 'error': 'La dirección no puede superar 300 caracteres.'}, status=400)
+        if len(notas) > 500:
+            return JsonResponse({'ok': False, 'error': 'Las notas no pueden superar 500 caracteres.'}, status=400)
+
+        if not forzar and Cliente.objects.filter(nombre__iexact=nombre).exists():
+            return JsonResponse({
+                'ok':        False,
+                'advertencia': True,
+                'error':     f'Ya existe un cliente llamado "{nombre}". ¿Deseas crear otro de todas formas?',
+            }, status=200)
 
         cliente = Cliente.objects.create(
             nombre    = nombre,
-            telefono  = data.get('telefono', '').strip(),
-            direccion = data.get('direccion', '').strip(),
-            notas     = data.get('notas', '').strip(),
+            telefono  = telefono,
+            direccion = direccion,
+            notas     = notas,
         )
         return JsonResponse({
-            'ok':     True,
-            'id':     cliente.id,
-            'nombre': cliente.nombre,
-            'url':    f'/fiados/cliente/{cliente.id}/',
+            'ok':       True,
+            'id':       cliente.id,
+            'nombre':   cliente.nombre,
+            'telefono': cliente.telefono,
+            'url':      f'/fiados/cliente/{cliente.id}/',
         })
     except Exception as e:
         return JsonResponse({'ok': False, 'error': str(e)}, status=500)
@@ -124,16 +146,28 @@ def crear_cliente(request):
 @require_POST
 def editar_cliente(request, pk):
     try:
-        cliente = get_object_or_404(Cliente, pk=pk)
-        data    = json.loads(request.body)
-        nombre  = data.get('nombre', '').strip()
+        cliente   = get_object_or_404(Cliente, pk=pk)
+        data      = json.loads(request.body)
+        nombre    = data.get('nombre', '').strip()
+        telefono  = re.sub(r'\D', '', data.get('telefono', '').strip())
+        direccion = data.get('direccion', '').strip()
+        notas     = data.get('notas', '').strip()
+
         if not nombre:
             return JsonResponse({'ok': False, 'error': 'El nombre es obligatorio.'}, status=400)
+        if len(nombre) > 200:
+            return JsonResponse({'ok': False, 'error': 'El nombre no puede superar 200 caracteres.'}, status=400)
+        if len(telefono) > 20:
+            return JsonResponse({'ok': False, 'error': 'El teléfono no puede superar 20 dígitos.'}, status=400)
+        if len(direccion) > 300:
+            return JsonResponse({'ok': False, 'error': 'La dirección no puede superar 300 caracteres.'}, status=400)
+        if len(notas) > 500:
+            return JsonResponse({'ok': False, 'error': 'Las notas no pueden superar 500 caracteres.'}, status=400)
 
         cliente.nombre    = nombre
-        cliente.telefono  = data.get('telefono', '').strip()
-        cliente.direccion = data.get('direccion', '').strip()
-        cliente.notas     = data.get('notas', '').strip()
+        cliente.telefono  = telefono
+        cliente.direccion = direccion
+        cliente.notas     = notas
         cliente.activo    = bool(data.get('activo', True))
         cliente.save()
         return JsonResponse({'ok': True, 'nombre': cliente.nombre})
@@ -191,6 +225,8 @@ def registrar_pago(request, fiado_pk):
 
         if metodo not in dict(PagoFiado.METODO_PAGO):
             return JsonResponse({'ok': False, 'error': 'Método de pago inválido.'}, status=400)
+        if len(notas) > 200:
+            return JsonResponse({'ok': False, 'error': 'Las notas no pueden superar 200 caracteres.'}, status=400)
 
         moneda = Moneda.objects.first()
         tasa   = moneda.tasa_cambio if moneda else fiado.tasa_aplicada

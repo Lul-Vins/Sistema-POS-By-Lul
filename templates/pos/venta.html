@@ -140,14 +140,21 @@
   }
 
   .producto-card .stock-info {
-    display: flex;
+    display: inline-flex;
     align-items: center;
-    gap: 5px;
-    margin-top: 4px;
-    font-size: 0.72rem;
-    color: #6c757d;
+    gap: 4px;
+    margin-top: 5px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #3d6b52;
+    background: #f0fdf4;
+    border-radius: 5px;
+    padding: 2px 6px;
   }
-  .producto-card .stock-info.bajo { color: #856404; }
+  .producto-card .stock-info.bajo {
+    color: #856404;
+    background: #fefce8;
+  }
 
   .badge-stock-bajo {
     font-size: 0.6rem;
@@ -373,15 +380,15 @@
   }
 
   .total-row .valor-usd {
-    font-size: 1.5rem;
-    font-weight: 800;
-    color: #1a1a2e;
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #6c757d;
   }
 
   .total-row .valor-bs {
-    font-size: 1rem;
-    font-weight: 600;
-    color: #6c757d;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1a1a2e;
   }
 
   .btn-cobrar {
@@ -541,12 +548,12 @@
 
     <div class="carrito-footer">
       <div class="total-row">
-        <span class="label">Total USD</span>
-        <span class="valor-usd" id="total-usd">$ 0.00</span>
-      </div>
-      <div class="total-row">
         <span class="label">Total Bs.</span>
         <span class="valor-bs" id="total-bs">Bs. 0,00</span>
+      </div>
+      <div class="total-row">
+        <span class="label">Total USD</span>
+        <span class="valor-usd" id="total-usd">$ 0.00</span>
       </div>
 
       <div id="alerta-tasa-vencida"
@@ -595,8 +602,8 @@
           <span class="text-muted" style="font-size:.9rem;">Total a cobrar</span>
         </div>
         <div class="d-flex justify-content-between align-items-baseline mb-1">
-          <span style="font-size:2rem; font-weight:800; color:#1a1a2e;" id="cobro-total-usd">$ 0.00</span>
-          <span style="font-size:1.1rem; color:#6c757d;" id="cobro-total-bs">Bs. 0,00</span>
+          <span style="font-size:2rem; font-weight:800; color:#1a1a2e;" id="cobro-total-bs">Bs. 0,00</span>
+          <span style="font-size:1.1rem; color:#6c757d;" id="cobro-total-usd">$ 0.00</span>
         </div>
         <hr class="my-2">
 
@@ -612,7 +619,7 @@
         <!-- Monto recibido + vuelto (solo efectivo) -->
         <div id="bloque-vuelto" style="display:none;">
           <label class="fw-semibold mb-1" style="font-size:.9rem;" id="label-monto-recibido">Monto recibido (USD)</label>
-          <input type="number" id="monto-recibido" class="form-control mb-2" placeholder="0.00" min="0" step="0.01" style="font-size:1.1rem; font-weight:700;">
+          <input type="number" id="monto-recibido" class="form-control mb-2" placeholder="0.00" min="0" step="0.01" max="9999999" style="font-size:1.1rem; font-weight:700;">
           <div class="d-flex justify-content-between px-1">
             <span class="text-muted" style="font-size:.85rem;">Vuelto</span>
             <span id="vuelto-display" style="font-size:1rem; font-weight:700; color:#2d6a4f;">$ 0.00</span>
@@ -621,7 +628,7 @@
         </div>
 
         <!-- Notas opcionales -->
-        <textarea id="cobro-notas" class="form-control" rows="1" placeholder="Notas (opcional)" style="font-size:.85rem; resize:none;"></textarea>
+        <textarea id="cobro-notas" class="form-control" rows="1" placeholder="Notas (opcional)" style="font-size:.85rem; resize:none;" maxlength="500"></textarea>
 
         <!-- Feedback -->
         <div id="cobro-feedback" class="mt-2 text-danger" style="font-size:.85rem; min-height:1.2rem;"></div>
@@ -676,6 +683,36 @@
   </div>
 </div>
 <!-- ══ FIN MODAL POST-COBRO ════════════════════════════════════ -->
+
+
+<!-- ══ MODAL: CANTIDAD EN KG ═══════════════════════════════════ -->
+<div class="modal fade" id="modalKg" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:320px;">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-1" style="background:#1a1a2e; color:#fff;">
+        <div>
+          <div class="fw-bold" id="kg-dialog-nombre" style="font-size:1rem;"></div>
+          <div class="opacity-75" id="kg-dialog-precio" style="font-size:.82rem;"></div>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pt-3 pb-2">
+        <label class="form-label fw-semibold mb-1">¿Cuántos kg?</label>
+        <input type="number" id="kg-input" class="form-control"
+               style="font-size:1.4rem; font-weight:700; text-align:center;"
+               placeholder="0,000" min="0.001" step="0.001" max="9999">
+        <div id="kg-feedback" class="text-danger mt-1" style="font-size:.82rem; min-height:1rem;"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0 pb-3 px-4">
+        <button type="button" class="btn w-100 fw-bold text-white py-2" id="btn-kg-ok"
+                style="background:#2d6a4f; border-radius:8px; font-size:1rem;">
+          <i class="bi bi-check-lg me-1"></i>Agregar al carrito
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL KG ═════════════════════════════════════════════ -->
 
 {% endblock %}
 
@@ -827,20 +864,31 @@
 
     const stockIcono = p.stock_bajo ? 'bi-exclamation-triangle-fill' : 'bi-box-seam';
     const stockClase = p.stock_bajo ? 'bajo' : '';
-    const stockHtml  = `<div class="stock-info ${stockClase}">
-      <i class="bi ${stockIcono}"></i> Stock: ${p.stock_actual}
+    const unidad    = p.vendido_por_peso ? 'kg' : 'ud';
+    const stockText = p.vendido_por_peso
+      ? `${parseFloat(p.stock_actual.toFixed(3)).toString().replace('.', ',')} kg`
+      : p.stock_actual;
+    const stockHtml = `<div class="stock-info ${stockClase}">
+      <i class="bi ${stockIcono}"></i> Stock: ${stockText}
     </div>`;
+    const precioLabel = p.vendido_por_peso
+      ? `Bs. ${p.precio_bs ? p.precio_bs.toFixed(2) : '—'}/kg`
+      : bsHtml;
+    const precioUsdLabel = p.vendido_por_peso
+      ? `$ ${p.precio_usd.toFixed(2)}/kg`
+      : `$ ${p.precio_usd.toFixed(2)}`;
 
     col.innerHTML = `
       <div class="card producto-card"
            data-id="${p.id}"
            data-nombre-producto="${p.nombre}"
-           data-precio="${p.precio_usd}">
+           data-precio="${p.precio_usd}"
+           data-por-peso="${p.vendido_por_peso ? 'true' : 'false'}">
         <div class="card-img-wrap">${imgHtml}</div>
         <div class="card-body">
           <div class="nombre">${p.nombre}</div>
-          <div class="precio-bs">${bsHtml}</div>
-          <div class="precio-usd">$ ${p.precio_usd.toFixed(2)}</div>
+          <div class="precio-bs">${precioLabel}</div>
+          <div class="precio-usd">${precioUsdLabel}</div>
           ${stockHtml}
         </div>
       </div>`;
@@ -858,25 +906,67 @@
   grid.addEventListener('click', function (e) {
     const card = e.target.closest('.producto-card');
     if (!card) return;
-    agregarAlCarrito(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio));
+    if (card.dataset.porPeso === 'true') {
+      abrirDialogoKg(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio));
+    } else {
+      agregarAlCarrito(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), false, 1);
+    }
   });
 
-  // ── Lógica del carrito ─────────────────────────────────────
-  function agregarAlCarrito(id, nombre, precioUsd) {
-    if (carrito[id]) {
-      carrito[id].cantidad++;
-    } else {
-      carrito[id] = { nombre, precio_usd: parseFloat(precioUsd), cantidad: 1 };
+  // ── Diálogo de cantidad en kg ───────────────────────────────
+  function abrirDialogoKg(id, nombre, precioUsd) {
+    document.getElementById('kg-dialog-nombre').textContent = nombre;
+    document.getElementById('kg-dialog-precio').textContent =
+      `$ ${precioUsd.toFixed(2)}/kg`;
+    document.getElementById('kg-input').value = carrito[id]
+      ? carrito[id].cantidad.toFixed(3)
+      : '';
+
+    _kgPendiente = { id, nombre, precioUsd };
+    new bootstrap.Modal(document.getElementById('modalKg')).show();
+    setTimeout(() => document.getElementById('kg-input').focus(), 300);
+  }
+
+  let _kgPendiente = null;
+
+  document.getElementById('btn-kg-ok').addEventListener('click', confirmarKg);
+  document.getElementById('kg-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') confirmarKg();
+  });
+
+  function confirmarKg() {
+    const val = parseFloat(document.getElementById('kg-input').value);
+    if (!val || isNaN(val) || val <= 0) {
+      document.getElementById('kg-feedback').textContent = 'Ingresa una cantidad mayor a 0.';
+      return;
     }
+    if (val > 9999) {
+      document.getElementById('kg-feedback').textContent = 'La cantidad no puede superar 9.999 kg.';
+      return;
+    }
+    const { id, nombre, precioUsd } = _kgPendiente;
+    bootstrap.Modal.getInstance(document.getElementById('modalKg')).hide();
+    agregarAlCarrito(id, nombre, precioUsd, true, parseFloat(val.toFixed(3)));
+  }
+
+  // ── Lógica del carrito ─────────────────────────────────────
+  function agregarAlCarrito(id, nombre, precioUsd, porPeso, cantidad) {
+    carrito[id] = { nombre, precio_usd: precioUsd, cantidad, por_peso: porPeso };
     renderCarrito();
     buscador.focus();
   }
 
   function cambiarCantidad(id, delta) {
     if (!carrito[id]) return;
-    carrito[id].cantidad += delta;
+    const paso = carrito[id].por_peso ? 0.1 : 1;
+    carrito[id].cantidad = parseFloat((carrito[id].cantidad + delta * paso).toFixed(3));
     if (carrito[id].cantidad <= 0) delete carrito[id];
     renderCarrito();
+  }
+
+  function editarCantidadKg(id) {
+    if (!carrito[id]) return;
+    abrirDialogoKg(id, carrito[id].nombre, carrito[id].precio_usd);
   }
 
   function vaciarCarrito() {
@@ -910,21 +1000,35 @@
       const item        = carrito[id];
       const subtotalUsd = item.precio_usd * item.cantidad;
       totalUsd   += subtotalUsd;
-      totalItems += item.cantidad;
+      totalItems += item.por_peso ? 1 : item.cantidad;
 
       const el = document.createElement('div');
       el.className  = 'carrito-item';
       el.dataset.id = id;
+      const precioLabel = item.por_peso
+        ? `$ ${item.precio_usd.toFixed(2)}/kg`
+        : `$ ${item.precio_usd.toFixed(2)} c/u`;
+      const kgDisplay = parseFloat(item.cantidad.toFixed(3)).toString().replace('.', ',');
+      const qtyHtml = item.por_peso
+        ? `<div class="qty-control">
+             <button onclick="cambiarCantidad(${id}, -1)">−</button>
+             <span class="qty-num" style="cursor:pointer; background:#f0fdf4; border-radius:6px; padding:1px 5px;"
+                   onclick="editarCantidadKg(${id})" title="Clic para editar">
+               ${kgDisplay}<small style="font-weight:400; color:#6c757d; font-size:.75em; margin-left:2px;">kg</small>
+             </span>
+             <button onclick="cambiarCantidad(${id}, +1)">+</button>
+           </div>`
+        : `<div class="qty-control">
+             <button onclick="cambiarCantidad(${id}, -1)">−</button>
+             <span class="qty-num">${item.cantidad}</span>
+             <button onclick="cambiarCantidad(${id}, +1)">+</button>
+           </div>`;
       el.innerHTML  = `
         <div class="item-info">
           <div class="item-nombre" title="${item.nombre}">${truncar(item.nombre)}</div>
-          <div class="item-precio">$ ${item.precio_usd.toFixed(2)} c/u</div>
+          <div class="item-precio">${precioLabel}</div>
         </div>
-        <div class="qty-control">
-          <button onclick="cambiarCantidad(${id}, -1)">−</button>
-          <span class="qty-num">${item.cantidad}</span>
-          <button onclick="cambiarCantidad(${id}, +1)">+</button>
-        </div>
+        ${qtyHtml}
         <div class="item-subtotal">$ ${subtotalUsd.toFixed(2)}</div>`;
       contenedor.appendChild(el);
     });
@@ -1037,6 +1141,12 @@
         return;
       }
 
+      if (isNaN(recibido) || recibido < 0 || recibido > 9_999_999) {
+        feedback.textContent = 'Monto recibido inválido.';
+        inputRecibido.focus();
+        return;
+      }
+
       if (metodo === 'EFECTIVO_USD' && recibido < totalUsd) {
         feedback.textContent = `Monto insuficiente. Faltan $ ${(totalUsd - recibido).toFixed(2)}.`;
         inputRecibido.focus();
@@ -1141,8 +1251,7 @@
   }
 
   document.getElementById('pc-btn-nueva').addEventListener('click', () => {
-    modalPostCobro.hide();
-    buscador.focus();
+    location.reload();
   });
 
   // ── Hook global: llamado desde base.html al actualizar tasa ──
@@ -1154,7 +1263,8 @@
       const precioUsd = parseFloat(card.dataset.precio);
       const bsEl      = card.querySelector('.precio-bs');
       if (bsEl && precioUsd) {
-        bsEl.textContent = `Bs. ${(precioUsd * TASA).toFixed(2)}`;
+        const sufijo = card.dataset.porPeso === 'true' ? '/kg' : '';
+        bsEl.textContent = `Bs. ${(precioUsd * TASA).toFixed(2)}${sufijo}`;
       }
     });
 
@@ -1214,5 +1324,62 @@
       .then(d => aplicarEstadoTasa(d.tasa_vencida, d.tasa, d.ultima_actualizacion))
       .catch(() => {}); // silencioso si falla la red
   }, 60_000);
+
+  // Recarga automática cuando el admin actualiza la tasa desde configuración
+  // (funciona entre pestañas del mismo origen via Storage Event API)
+  window.addEventListener('storage', e => {
+    if (e.key === 'pos_tasa_actualizada') location.reload();
+  });
+
+  // ── Lector de código de barras global ─────────────────────
+  // El escáner escribe muy rápido (~10-30ms entre teclas). Si detectamos
+  // una ráfaga rápida de ≥6 chars terminada en Enter, lo tratamos como
+  // un escaneo aunque el buscador no tenga el foco.
+  (function () {
+    let buf = '';
+    let t0  = 0;
+    const VELOCIDAD_MS = 50;
+    const MIN_CHARS    = 6;
+
+    document.addEventListener('keydown', function (e) {
+      // Si hay algún modal abierto, no interferir
+      if (document.querySelector('.modal.show')) { buf = ''; return; }
+
+      const activo = document.activeElement;
+
+      // Si el foco está en un input crítico que no es el buscador, ignorar
+      const inputsCriticos = ['monto-recibido'];
+      if (activo && inputsCriticos.includes(activo.id)) { buf = ''; return; }
+
+      // Si el foco está en el buscador, el listener propio del buscador ya maneja Enter.
+      // Sólo acumulamos el buffer para detectar velocidad de escáner.
+      if (activo && activo.id === 'buscador') {
+        const ahora = Date.now();
+        if (e.key === 'Enter') { buf = ''; return; }
+        if (buf.length > 0 && ahora - t0 > VELOCIDAD_MS) buf = '';
+        if (e.key.length === 1) { buf += e.key; t0 = ahora; }
+        return;
+      }
+
+      const ahora = Date.now();
+
+      if (e.key === 'Enter') {
+        if (buf.length >= MIN_CHARS) {
+          // Escáner detectado: enrutar al buscador y buscar de inmediato
+          e.preventDefault();
+          buscador.value = buf;
+          buscador.focus();
+          clearTimeout(timerBusqueda);
+          buscar(buf, true, catSeleccionada);
+        }
+        buf = ''; return;
+      }
+
+      // Resetear buffer si la pausa fue demasiado larga (escritura humana)
+      if (buf.length > 0 && ahora - t0 > VELOCIDAD_MS) buf = '';
+
+      if (e.key.length === 1) { buf += e.key; t0 = ahora; }
+    });
+  })();
 </script>
 {% endblock %}

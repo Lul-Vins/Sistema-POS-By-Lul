@@ -33,8 +33,9 @@ class Producto(models.Model):
     codigo_barras = models.CharField(max_length=100, blank=True, null=True, unique=True)
     costo_usd = models.DecimalField(max_digits=10, decimal_places=4, null=True, blank=True)
     precio_usd = models.DecimalField(max_digits=10, decimal_places=4)
-    stock_actual = models.IntegerField(default=0)
-    stock_minimo = models.IntegerField(default=5)
+    vendido_por_peso = models.BooleanField(default=False)
+    stock_actual = models.DecimalField(max_digits=12, decimal_places=3, default=0)
+    stock_minimo = models.DecimalField(max_digits=12, decimal_places=3, default=5)
     imagen = models.ImageField(upload_to='productos/', blank=True, null=True)
     activo = models.BooleanField(default=True)
     alicuota_iva = models.CharField(max_length=10, choices=ALICUOTA_IVA, default='GENERAL')
@@ -66,5 +67,5 @@ class Producto(models.Model):
 
     @property
     def stock_bajo(self):
-        """True si el stock actual está en o por debajo del mínimo."""
-        return self.stock_actual <= self.stock_minimo
+        """True si el stock actual está por debajo del mínimo configurado."""
+        return self.stock_actual < self.stock_minimo

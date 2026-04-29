@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load pos_extras %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -381,7 +381,7 @@
             <td>{{ venta.fecha|date:"H:i" }}</td>
             <td class="productos-celda">
               {% for d in venta.detalles.all %}
-                {{ d.cantidad }}x {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}
+                {{ d.cantidad|formato_cantidad:d.producto.vendido_por_peso }} × {{ d.producto.nombre }}{% if not forloop.last %}, {% endif %}
               {% endfor %}
             </td>
             <td class="r">$ {{ venta.total_usd|floatformat:2 }}</td>

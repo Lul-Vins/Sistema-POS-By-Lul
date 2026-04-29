@@ -1,3 +1,4 @@
+import re
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.contrib.auth.models import User
@@ -223,8 +224,16 @@ def crear_usuario(request):
 
         if not nombre or not username or not password:
             return JsonResponse({'ok': False, 'error': 'Completa todos los campos.'}, status=400)
+        if len(nombre) > 100:
+            return JsonResponse({'ok': False, 'error': 'El nombre no puede superar 100 caracteres.'}, status=400)
+        if len(username) > 50:
+            return JsonResponse({'ok': False, 'error': 'El usuario no puede superar 50 caracteres.'}, status=400)
+        if not re.match(r'^[a-zA-Z0-9_]+$', username):
+            return JsonResponse({'ok': False, 'error': 'El usuario solo puede contener letras, números y guión bajo.'}, status=400)
         if len(password) < 4:
             return JsonResponse({'ok': False, 'error': 'La contraseña debe tener al menos 4 caracteres.'}, status=400)
+        if len(password) > 100:
+            return JsonResponse({'ok': False, 'error': 'La contraseña no puede superar 100 caracteres.'}, status=400)
         if User.objects.filter(username=username).exists():
             return JsonResponse({'ok': False, 'error': 'Ese nombre de usuario ya está en uso.'}, status=400)
 
@@ -266,6 +275,8 @@ def editar_usuario(request, pk):
             es_admin = True
 
         if nombre:
+            if len(nombre) > 100:
+                return JsonResponse({'ok': False, 'error': 'El nombre no puede superar 100 caracteres.'}, status=400)
             partes          = nombre.split(' ', 1)
             user.first_name = partes[0]
             user.last_name  = partes[1] if len(partes) > 1 else ''
@@ -273,6 +284,8 @@ def editar_usuario(request, pk):
         if password:
             if len(password) < 4:
                 return JsonResponse({'ok': False, 'error': 'La contraseña debe tener al menos 4 caracteres.'}, status=400)
+            if len(password) > 100:
+                return JsonResponse({'ok': False, 'error': 'La contraseña no puede superar 100 caracteres.'}, status=400)
             user.set_password(password)
 
         user.is_staff  = es_admin

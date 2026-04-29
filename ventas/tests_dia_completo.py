@@ -355,7 +355,7 @@ class InventarioSetupTest(TestCase):
         self.assertEqual(resp.json()['productos'], [])
 
     def test_i15_stock_bajo_detectado_en_producto(self):
-        """La propiedad stock_bajo es True cuando stock_actual <= stock_minimo."""
+        """La propiedad stock_bajo es True cuando stock_actual < stock_minimo (operador estricto)."""
         producto_bajo = Producto.objects.create(
             nombre='Producto bajo', precio_usd='1.00',
             stock_actual=3, stock_minimo=5,
@@ -646,7 +646,7 @@ class FiadosTest(TestCase):
         self.assertFalse(resp.json()['ok'])
 
     def test_f03_editar_cliente(self):
-        """Se puede actualizar el telefono de un cliente."""
+        """Se puede actualizar el telefono. Guiones se normalizan a solo dígitos."""
         _, cliente = self._crear_cliente()
         resp = _post_json(self.c,
             reverse('fiados:editar_cliente', kwargs={'pk': cliente.pk}),
@@ -654,7 +654,7 @@ class FiadosTest(TestCase):
         )
         self.assertTrue(resp.json()['ok'])
         cliente.refresh_from_db()
-        self.assertEqual(cliente.telefono, '0416-1111111')
+        self.assertEqual(cliente.telefono, '04161111111')
 
     # ── Venta fiada y stock ──────────────────────────────────────────────────
 

@@ -222,7 +222,7 @@ class Venta(models.Model):
 class DetalleVenta(models.Model):
     venta                = models.ForeignKey(Venta, on_delete=models.CASCADE, related_name='detalles')
     producto             = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='detalles_venta')
-    cantidad             = models.PositiveIntegerField()
+    cantidad             = models.DecimalField(max_digits=10, decimal_places=3)
     precio_usd_capturado = models.DecimalField(max_digits=10, decimal_places=4)
     alicuota_iva         = models.CharField(max_length=10, default='GENERAL')  # snapshot al momento de la venta
 

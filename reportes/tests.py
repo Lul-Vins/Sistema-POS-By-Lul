@@ -40,7 +40,9 @@ class RendimientoBase(TestCase):
         print("  SETUP: creando 3000 productos + ventas...")
         print("=" * 60)
 
-        cls.moneda  = Moneda.objects.create(tasa_cambio=50)
+        cls.moneda = Moneda.objects.first()
+        cls.moneda.tasa_cambio = 50
+        cls.moneda.save(update_fields=['tasa_cambio'])
         cls.empresa = Empresa.objects.create(nombre='Test Perf SA', rif='J999')
         cls.cat     = Categoria.objects.create(nombre='General')
         cls.admin   = User.objects.create_user('admin_p',  password='admin1234', is_staff=True)

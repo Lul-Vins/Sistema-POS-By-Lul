@@ -1,0 +1,123 @@
+================================================================
+  GUIA DE RED LOCAL — POS Sistema
+  Para usar el POS desde varios equipos en el mismo local
+================================================================
+
+ARQUITECTURA
+────────────────────────────────────────────────────────────────
+Un solo PC actua como servidor (el del dueno del negocio).
+Los demas PCs (cajeros) solo abren el navegador apuntando
+al servidor. No necesitan Python ni el proyecto instalado.
+
+    PC Dueno (servidor)
+    ├── Corre Django
+    ├── Tiene la base de datos
+    └── Puerto 8000 abierto en la red
+            │
+            ├──── PC Cajero 1  (solo Chrome/Edge + CLIENTE_POS.vbs)
+            └──── PC Cajero 2  (solo Chrome/Edge + CLIENTE_POS.vbs)
+
+
+════════════════════════════════════════════════════════════════
+  CONFIGURACION EN EL PC SERVIDOR (el del dueno)
+════════════════════════════════════════════════════════════════
+
+PASO 1 — SABER LA IP LOCAL DEL SERVIDOR
+────────────────────────────────────────────────────────────────
+1. Abrir CMD (Win + R → escribir cmd → Enter)
+2. Escribir:
+      ipconfig
+3. Buscar la linea que dice "Direccion IPv4" bajo el adaptador
+   de red que esta usando (Wi-Fi o Ethernet). Ejemplo:
+      Direccion IPv4. . . . . . : 192.168.1.100
+4. ANOTAR ESA IP. Se la dara a los demas equipos.
+
+RECOMENDACION: Pedir al router que siempre le asigne la misma
+IP a este PC (IP fija / reserva DHCP). Asi no cambia sola.
+Consultar el manual del router o al tecnico de red.
+
+
+PASO 2 — ABRIR EL PUERTO 8000 EN EL FIREWALL
+────────────────────────────────────────────────────────────────
+1. Abrir CMD como Administrador:
+   - Buscar "cmd" en el menu Inicio
+   - Clic derecho → "Ejecutar como administrador"
+2. Pegar este comando y presionar Enter:
+
+      netsh advfirewall firewall add rule name="POS Django" dir=in action=allow protocol=TCP localport=8000
+
+3. Debe aparecer: "Aceptar"
+   Solo se hace UNA vez.
+
+
+PASO 3 — INICIAR EL SERVIDOR
+────────────────────────────────────────────────────────────────
+Hacer doble clic en el icono del escritorio (POS.vbs) como
+siempre. El servidor ya escucha en toda la red automaticamente.
+
+Para verificar que otros pueden conectarse, desde cualquier
+PC de la red abrir el navegador y entrar a:
+    http://[IP-DEL-SERVIDOR]:8000
+Ejemplo:
+    http://192.168.1.100:8000
+
+
+════════════════════════════════════════════════════════════════
+  CONFIGURACION EN CADA PC CAJERO
+════════════════════════════════════════════════════════════════
+
+Requisitos del PC cajero:
+  - Tener Chrome o Edge instalado
+  - Estar conectado a la misma red Wi-Fi o cable que el servidor
+  - NO necesita Python, Django, ni nada del proyecto
+
+PASO 1 — COPIAR EL ARCHIVO CLIENTE_POS.vbs AL PC CAJERO
+────────────────────────────────────────────────────────────────
+Desde el PC servidor, copiar por USB el archivo:
+    CLIENTE_POS.vbs
+(esta en la carpeta del proyecto)
+
+
+PASO 2 — CONFIGURAR LA IP DEL SERVIDOR EN EL ARCHIVO
+────────────────────────────────────────────────────────────────
+1. En el PC cajero, clic derecho en CLIENTE_POS.vbs
+2. Seleccionar "Abrir con" → "Bloc de notas"
+3. Buscar esta linea al inicio del archivo:
+      IP_SERVIDOR = "192.168.1.100"
+4. Cambiar la IP por la IP real del servidor (del Paso 1
+   de la seccion anterior)
+5. Guardar y cerrar el Bloc de notas
+
+
+PASO 3 — CREAR ACCESO DIRECTO EN EL ESCRITORIO
+────────────────────────────────────────────────────────────────
+1. Clic derecho en CLIENTE_POS.vbs
+2. Seleccionar "Enviar a" → "Escritorio (crear acceso directo)"
+3. Clic derecho en el acceso directo → Propiedades
+4. Pestana "Acceso directo" → boton "Cambiar icono..."
+5. Escribir: C:\Windows\System32\shell32.dll → Enter
+6. Elegir el icono → Aceptar → Aplicar
+
+Desde ese momento: doble clic en el icono abre el POS
+directamente conectado al servidor, sin instalar nada mas.
+
+
+================================================================
+  NOTAS IMPORTANTES
+================================================================
+
+- Si el servidor (PC del dueno) esta apagado, los cajeros
+  NO pueden entrar al sistema. El servidor debe estar
+  encendido primero.
+
+- Si cambia la IP del servidor, hay que actualizar el archivo
+  CLIENTE_POS.vbs en cada PC cajero (Paso 2 de cajero).
+  Por eso se recomienda fijar la IP del servidor en el router.
+
+- La base de datos esta en el PC servidor. Si se dania ese
+  equipo, se pierden los datos. Hacer copias del archivo
+  db.sqlite3 periodicamente (copiarlo a un USB o nube).
+
+- Todos los cajeros y el dueno comparten la misma base de
+  datos en tiempo real. Las ventas de un cajero se ven
+  inmediatamente en los reportes del dueno.

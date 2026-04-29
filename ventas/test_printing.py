@@ -88,7 +88,9 @@ class WrapTests(TestCase):
 class ImprimirTicketErroresTests(TestCase):
 
     def setUp(self):
-        Moneda.objects.create(tasa_cambio=50)
+        m = Moneda.objects.first()
+        m.tasa_cambio = 50
+        m.save(update_fields=['tasa_cambio'])
 
     def test_impresora_no_configurada(self):
         empresa = _empresa(con_impresora=False)
@@ -155,7 +157,9 @@ class ImprimirTicketErroresTests(TestCase):
 class ImprimirTicketExitoTests(TestCase):
 
     def setUp(self):
-        Moneda.objects.create(tasa_cambio=50)
+        m = Moneda.objects.first()
+        m.tasa_cambio = 50
+        m.save(update_fields=['tasa_cambio'])
         self.empresa = _empresa()
 
     @patch('escpos.printer.Win32Raw')
@@ -212,7 +216,9 @@ class ImprimirTicketExitoTests(TestCase):
 class ContenidoTicketTests(TestCase):
 
     def setUp(self):
-        Moneda.objects.create(tasa_cambio=50)
+        m = Moneda.objects.first()
+        m.tasa_cambio = 50
+        m.save(update_fields=['tasa_cambio'])
         self.empresa = _empresa()
 
     def _textos_enviados(self, MockWin32Raw):

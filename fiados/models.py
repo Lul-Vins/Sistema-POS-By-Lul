@@ -132,7 +132,7 @@ class Fiado(models.Model):
 class DetalleFiado(models.Model):
     fiado                = models.ForeignKey(Fiado, on_delete=models.CASCADE, related_name='detalles')
     producto             = models.ForeignKey(Producto, on_delete=models.PROTECT, related_name='detalles_fiado')
-    cantidad             = models.PositiveIntegerField()
+    cantidad             = models.DecimalField(max_digits=10, decimal_places=3)
     precio_usd_capturado = models.DecimalField(max_digits=10, decimal_places=4)
 
     class Meta:

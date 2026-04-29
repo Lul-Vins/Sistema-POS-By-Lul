@@ -2,18 +2,22 @@ from django.test import TestCase, Client
 from django.contrib.auth.models import User
 from django.urls import reverse
 from django.utils import timezone
+from decimal import Decimal
 import json
 
 from configuracion.models import Moneda, Empresa
 from inventario.models import Producto, Categoria
 from .models import Venta, DetalleVenta, ContadorFactura
+from .templatetags.pos_extras import formato_cantidad
 
 
 # ── Fixture compartido ─────────────────────────────────────────────
 
 def crear_escenario_base():
     """Crea Moneda, Empresa, Producto y usuarios admin/cajero."""
-    moneda  = Moneda.objects.create(tasa_cambio=50)
+    moneda = Moneda.objects.first()
+    moneda.tasa_cambio = 50
+    moneda.save(update_fields=['tasa_cambio'])
     empresa = Empresa.objects.create(nombre='Test SA', rif='J123456789')
     cat     = Categoria.objects.create(nombre='General')
     prod    = Producto.objects.create(
@@ -322,9 +326,8 @@ class NumeroCorrelativoTests(TestCase):
             )
         except ValueError:
             pass
-        # El contador no debe haber avanzado
         contador = ContadorFactura.objects.first()
-        self.assertIsNone(contador)  # nunca se creó porque el rollback lo revirtió
+        self.assertIsNone(contador)
 
     def test_numero_fmt_sin_numero_factura(self):
         """Ventas antiguas sin numero_factura muestran #pk como fallback."""
@@ -372,3 +375,142 @@ class DecoradoresTests(TestCase):
         self.client.login(username='admin_t', password='admin1234')
         r = self.client.get(reverse('reportes:index'))
         self.assertEqual(r.status_code, 200)
+
+
+# ══════════════════════════════════════════════════════════════════
+# Filtro formato_cantidad (templatetag pos_extras)
+# ══════════════════════════════════════════════════════════════════
+
+class FormatoCantidadTests(TestCase):
+
+    def test_menos_de_un_kg_muestra_gramos(self):
+        self.assertEqual(formato_cantidad(Decimal('0.300'), True), '300 gr')
+
+    def test_gramos_pequeños(self):
+        self.assertEqual(formato_cantidad(Decimal('0.050'), True), '50 gr')
+
+    def test_exactamente_un_kg(self):
+        self.assertEqual(formato_cantidad(Decimal('1.000'), True), '1 kg')
+
+    def test_kg_con_decimal(self):
+        self.assertEqual(formato_cantidad(Decimal('1.500'), True), '1,5 kg')
+
+    def test_kg_grande(self):
+        self.assertEqual(formato_cantidad(Decimal('50.444'), True), '50,444 kg')
+
+    def test_sin_ceros_innecesarios(self):
+        self.assertEqual(formato_cantidad(Decimal('50.400'), True), '50,4 kg')
+
+    def test_producto_por_unidad_retorna_entero(self):
+        self.assertEqual(formato_cantidad(Decimal('2.000'), False), '2')
+
+    def test_producto_unidad_cantidad_mayor(self):
+        self.assertEqual(formato_cantidad(Decimal('15.000'), False), '15')
+
+
+# ══════════════════════════════════════════════════════════════════
+# Ventas con productos por kilo
+# ══════════════════════════════════════════════════════════════════
+
+class VentaKgTests(TestCase):
+
+    def setUp(self):
+        self.moneda, _, _, self.admin, self.cajero = crear_escenario_base()
+        self.prod_kg = Producto.objects.create(
+            nombre='Carne', precio_usd=5,
+            stock_actual=Decimal('10.000'), stock_minimo=Decimal('1.000'),
+            vendido_por_peso=True,
+        )
+        self.client = Client()
+        self.client.login(username='cajero_t', password='caj1234')
+
+    def test_venta_kg_descuenta_stock_decimal(self):
+        carrito = [{'producto': self.prod_kg, 'cantidad': Decimal('0.300')}]
+        Venta.crear_desde_carrito(carrito, 'EFECTIVO_BS')
+        self.prod_kg.refresh_from_db()
+        self.assertEqual(self.prod_kg.stock_actual, Decimal('9.700'))
+
+    def test_venta_kg_via_vista(self):
+        r = self.client.post(
+            reverse('pos:procesar_venta'),
+            data=json.dumps({
+                'carrito': [{'id': self.prod_kg.id, 'cantidad': 0.5}],
+                'metodo_pago': 'EFECTIVO_BS',
+            }),
+            content_type='application/json',
+        )
+        self.assertTrue(r.json()['ok'])
+        self.prod_kg.refresh_from_db()
+        self.assertAlmostEqual(float(self.prod_kg.stock_actual), 9.5, places=2)
+
+    def test_stock_insuficiente_kg(self):
+        carrito = [{'producto': self.prod_kg, 'cantidad': Decimal('999.000')}]
+        with self.assertRaises(ValueError):
+            Venta.crear_desde_carrito(carrito, 'EFECTIVO_BS')
+
+    def test_detalle_venta_cantidad_decimal_guardada(self):
+        carrito = [{'producto': self.prod_kg, 'cantidad': Decimal('1.250')}]
+        venta = Venta.crear_desde_carrito(carrito, 'EFECTIVO_BS')
+        detalle = venta.detalles.first()
+        self.assertEqual(detalle.cantidad, Decimal('1.250'))
+
+
+# ══════════════════════════════════════════════════════════════════
+# Validación de inputs en procesar_venta
+# ══════════════════════════════════════════════════════════════════
+
+class ValidacionProcesarVentaTests(TestCase):
+
+    def setUp(self):
+        self.moneda, self.empresa, self.prod, self.admin, self.cajero = crear_escenario_base()
+        self.client = Client()
+        self.client.login(username='cajero_t', password='caj1234')
+        self.url = reverse('pos:procesar_venta')
+
+    def _post(self, data):
+        return self.client.post(
+            self.url,
+            data=json.dumps(data),
+            content_type='application/json',
+        )
+
+    def test_notas_demasiado_largas_rechazadas(self):
+        r = self._post({
+            'carrito': [{'id': self.prod.id, 'cantidad': 1}],
+            'metodo_pago': 'EFECTIVO_BS',
+            'notas': 'x' * 501,
+        })
+        self.assertEqual(r.status_code, 400)
+        self.assertFalse(r.json()['ok'])
+
+    def test_notas_en_limite_aceptadas(self):
+        r = self._post({
+            'carrito': [{'id': self.prod.id, 'cantidad': 1}],
+            'metodo_pago': 'EFECTIVO_BS',
+            'notas': 'x' * 500,
+        })
+        self.assertTrue(r.json()['ok'])
+
+    def test_monto_recibido_negativo_rechazado(self):
+        r = self._post({
+            'carrito': [{'id': self.prod.id, 'cantidad': 1}],
+            'metodo_pago': 'EFECTIVO_BS',
+            'monto_recibido': -5,
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_monto_recibido_excesivo_rechazado(self):
+        r = self._post({
+            'carrito': [{'id': self.prod.id, 'cantidad': 1}],
+            'metodo_pago': 'EFECTIVO_BS',
+            'monto_recibido': 10_000_000,
+        })
+        self.assertEqual(r.status_code, 400)
+
+    def test_monto_recibido_valido_aceptado(self):
+        r = self._post({
+            'carrito': [{'id': self.prod.id, 'cantidad': 1}],
+            'metodo_pago': 'EFECTIVO_BS',
+            'monto_recibido': 100,
+        })
+        self.assertTrue(r.json()['ok'])

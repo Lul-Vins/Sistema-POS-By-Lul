@@ -4,6 +4,7 @@ from django.views.decorators.http import require_POST
 from django.db import transaction
 from django.db.models import Sum, Count
 from django.utils import timezone
+from decimal import Decimal
 import json
 from datetime import date
 
@@ -78,6 +79,7 @@ def ticket(request, pk):
 @require_POST
 def procesar_venta(request):
     try:
+        import math
         body           = json.loads(request.body)
         carrito        = body.get('carrito', [])
         metodo_pago    = body.get('metodo_pago', '')
@@ -93,11 +95,25 @@ def procesar_venta(request):
         if metodo_pago not in dict(Venta.METODO_PAGO):
             return JsonResponse({'ok': False, 'error': 'Método de pago inválido.'}, status=400)
 
+        notas = str(notas).strip()
+        if len(notas) > 500:
+            return JsonResponse({'ok': False, 'error': 'Las notas no pueden superar 500 caracteres.'}, status=400)
+
+        if monto_recibido is not None:
+            try:
+                monto_recibido = float(monto_recibido)
+                if math.isnan(monto_recibido) or math.isinf(monto_recibido) or monto_recibido < 0:
+                    raise ValueError
+                if monto_recibido > 9_999_999:
+                    raise ValueError
+            except (ValueError, TypeError):
+                return JsonResponse({'ok': False, 'error': 'Monto recibido inválido.'}, status=400)
+
         # Construir lista de items para crear_desde_carrito
         items = []
         for item in carrito:
             producto = get_object_or_404(Producto, pk=item['id'], activo=True)
-            items.append({'producto': producto, 'cantidad': int(item['cantidad'])})
+            items.append({'producto': producto, 'cantidad': Decimal(str(item['cantidad']))})
 
         venta_obj = Venta.crear_desde_carrito(items, metodo_pago, notas, monto_recibido, vuelto, vendedor=request.user)
 
@@ -158,7 +174,8 @@ def buscar_productos(request):
             'precio_usd': float(p.precio_usd),
             'precio_bs':  round(precio_bs, 2) if precio_bs else None,
             'imagen':    p.imagen.url if p.imagen else None,
-            'stock_actual': p.stock_actual,
+            'vendido_por_peso': p.vendido_por_peso,
+            'stock_actual': float(p.stock_actual),
             'stock_bajo': p.stock_bajo,
         })
 

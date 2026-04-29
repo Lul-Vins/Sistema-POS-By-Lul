@@ -25,6 +25,12 @@
   .monto-bs  { font-weight: 700; }
   .monto-usd { font-size: .8rem; color: #6c757d; }
 
+  .seccion-lbl {
+    font-size: .72rem; font-weight: 600;
+    text-transform: uppercase; letter-spacing: .5px;
+    color: #adb5bd; margin-bottom: .35rem;
+  }
+
   .producto-resultado {
     cursor: pointer; padding: .45rem .75rem;
     display: flex; align-items: center; justify-content: space-between;
@@ -179,10 +185,10 @@
 
       <!-- Cuerpo expandible -->
       <div id="fiado-body-{{ f.pk }}" style="display:none; background:#fff;">
-        <div class="p-3 pt-2 border-top">
+        <div class="px-3 pb-3 pt-2 border-top">
 
           {% if f.pct_pagado > 0 and f.estado != 'ANULADO' %}
-          <div class="progress mb-3" style="height:6px; border-radius:3px;">
+          <div class="progress mb-3" style="height:4px; border-radius:3px;">
             <div class="progress-bar bg-success" style="width:{{ f.pct_pagado }}%;"></div>
           </div>
           {% endif %}
@@ -191,35 +197,26 @@
 
             <!-- Productos -->
             <div class="col-md-6">
-              <div class="fw-semibold text-muted mb-2"
-                   style="font-size:.72rem; text-transform:uppercase; letter-spacing:.5px;">Productos</div>
-              <table class="table table-sm mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Producto</th>
-                    <th class="text-center">Cant.</th>
-                    <th class="text-end">P/U USD</th>
-                    <th class="text-end">Subt. USD</th>
-                  </tr>
-                </thead>
+              <div class="seccion-lbl">Productos</div>
+              <table class="table table-sm mb-0" style="font-size:.85rem;">
                 <tbody>
                   {% for d in f.detalles.all %}
                   <tr>
-                    <td>{{ d.producto.nombre }}</td>
-                    <td class="text-center">{{ d.cantidad }}</td>
-                    <td class="text-end text-muted">$ {{ d.precio_usd_capturado|floatformat:2 }}</td>
-                    <td class="text-end fw-semibold">$ {{ d.subtotal_usd|floatformat:2 }}</td>
+                    <td class="ps-0 text-muted py-1" style="width:1.8rem; white-space:nowrap;">{{ d.cantidad }}×</td>
+                    <td class="py-1">{{ d.producto.nombre }}</td>
+                    <td class="text-end py-1 text-muted pe-0">$ {{ d.subtotal_usd|floatformat:2 }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
-                <tfoot>
-                  <tr class="fw-bold">
-                    <td colspan="3" class="text-end">Total</td>
-                    <td class="text-end">$ {{ f.total_usd|floatformat:2 }} USD</td>
+                <tfoot style="border-top:1px solid #dee2e6;">
+                  <tr class="fw-semibold">
+                    <td colspan="2" class="text-end ps-0 pt-2 pb-0">Total</td>
+                    <td class="text-end pt-2 pb-0 pe-0">$ {{ f.total_usd|floatformat:2 }}</td>
                   </tr>
-                  <tr class="text-muted" style="font-size:.8rem;">
-                    <td colspan="3" class="text-end">Al momento del fiado (×{{ f.tasa_aplicada }})</td>
-                    <td class="text-end">Bs. {{ f.total_bs|floatformat:2 }}</td>
+                  <tr class="text-muted" style="font-size:.76rem;">
+                    <td colspan="3" class="text-end ps-0 pt-0 pb-0 pe-0">
+                      Bs. {{ f.total_bs|floatformat:2 }} (tasa {{ f.tasa_aplicada }})
+                    </td>
                   </tr>
                 </tfoot>
               </table>
@@ -227,39 +224,29 @@
 
             <!-- Abonos -->
             <div class="col-md-6">
-              <div class="fw-semibold text-muted mb-2"
-                   style="font-size:.72rem; text-transform:uppercase; letter-spacing:.5px;">Abonos</div>
+              <div class="seccion-lbl">Abonos</div>
               {% if f.pagos.all %}
-              <table class="table table-sm mb-0">
-                <thead class="table-light">
-                  <tr>
-                    <th>Fecha</th>
-                    <th>Método</th>
-                    <th class="text-end">Bs pagados</th>
-                    <th class="text-end">≡ USD</th>
-                  </tr>
-                </thead>
+              <table class="table table-sm mb-0" style="font-size:.85rem;">
                 <tbody>
                   {% for p in f.pagos.all %}
                   <tr>
-                    <td style="font-size:.82rem;">{{ p.fecha|date:"d/m H:i" }}</td>
-                    <td style="font-size:.82rem;">{{ p.get_metodo_pago_display }}</td>
-                    <td class="text-end fw-semibold">Bs. {{ p.monto_bs|floatformat:2 }}</td>
-                    <td class="text-end text-success">$ {{ p.monto_usd|floatformat:2 }}</td>
+                    <td class="ps-0 text-muted py-1" style="white-space:nowrap;">{{ p.fecha|date:"d/m H:i" }}</td>
+                    <td class="py-1 text-muted">{{ p.get_metodo_pago_display }}</td>
+                    <td class="text-end fw-semibold py-1 pe-0">Bs. {{ p.monto_bs|floatformat:2 }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
-                <tfoot>
-                  <tr class="fw-bold">
-                    <td colspan="2" class="text-end">Total pagado</td>
-                    <td class="text-end">Bs. {{ f.pagado_bs_calc|floatformat:2 }}</td>
-                    <td class="text-end text-success">$ {{ f.pagado_calc|floatformat:2 }}</td>
+                <tfoot style="border-top:1px solid #dee2e6;">
+                  <tr class="fw-semibold">
+                    <td colspan="2" class="text-end ps-0 pt-2 pb-0">Pagado</td>
+                    <td class="text-end pt-2 pb-0 pe-0">Bs. {{ f.pagado_bs_calc|floatformat:2 }}</td>
                   </tr>
                   {% if f.saldo_calc > 0 %}
-                  <tr class="text-danger">
-                    <td colspan="2" class="text-end fw-bold">Saldo (hoy)</td>
-                    <td class="text-end fw-bold">{% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|floatformat:2 }}{% else %}—{% endif %}</td>
-                    <td class="text-end fw-bold">$ {{ f.saldo_calc|floatformat:2 }}</td>
+                  <tr class="text-danger fw-semibold">
+                    <td colspan="2" class="text-end ps-0 pt-1 pb-0">Saldo hoy</td>
+                    <td class="text-end pt-1 pb-0 pe-0">
+                      {% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|floatformat:2 }}{% else %}$ {{ f.saldo_calc|floatformat:2 }}{% endif %}
+                    </td>
                   </tr>
                   {% endif %}
                 </tfoot>
@@ -409,7 +396,7 @@
             Monto a abonar (Bs) <span class="text-danger">*</span>
           </label>
           <input type="number" id="pago-monto" class="form-control form-control-lg fw-bold"
-                 placeholder="0.00" min="0.01" step="0.01">
+                 placeholder="0.00" min="0.01" step="0.01" max="99999999">
           <div class="equiv-preview" id="pago-equiv">
             <i class="bi bi-arrow-right me-1"></i>
             Abona <strong id="pago-equiv-usd"></strong> USD al cambio de hoy
@@ -431,7 +418,7 @@
             Notas <small class="fw-normal">(opcional)</small>
           </label>
           <input type="text" id="pago-notas" class="form-control"
-                 placeholder="Referencia, observación...">
+                 placeholder="Referencia, observación..." maxlength="200">
         </div>
         <div id="pago-feedback" class="text-danger" style="font-size:.85rem; min-height:1rem;"></div>
       </div>
@@ -680,7 +667,8 @@
     const monto    = parseFloat(document.getElementById('pago-monto').value);
     const metodo   = document.getElementById('pago-metodo').value;
 
-    if (!monto || monto <= 0) { feedback.textContent = 'Ingresa un monto válido.'; return; }
+    if (!monto || isNaN(monto) || monto <= 0) { feedback.textContent = 'Ingresa un monto válido.'; return; }
+    if (monto > 99_999_999) { feedback.textContent = 'El monto es demasiado alto.'; return; }
     if (!metodo) { feedback.textContent = 'Selecciona el método de pago.'; return; }
 
     this.disabled  = true;
@@ -732,5 +720,11 @@
       })
       .catch(() => alert('Error de conexión.'));
   }
+
+  // Recargar cuando el admin actualiza la tasa BCV (misma pestaña o desde otra)
+  window.onTasaActualizada = () => location.reload();
+  window.addEventListener('storage', e => {
+    if (e.key === 'pos_tasa_actualizada') location.reload();
+  });
 </script>
 {% endblock %}

@@ -1,0 +1,139 @@
+================================================================
+  GUIA DE INSTALACION — POS Sistema
+  Seguir en orden. No saltarse pasos.
+================================================================
+
+
+PRE-REQUISITO: INSTALAR PYTHON
+────────────────────────────────────────────────────────────────
+1. Descargar Python 3.14 desde: https://www.python.org/downloads/
+2. En el instalador, marcar la casilla:
+      [x] Add Python to PATH
+   (esta opcion es importante, si no se marca, nada funciona)
+3. Completar instalacion.
+4. Verificar abriendo CMD y escribiendo:
+      python --version
+   Debe mostrar: Python 3.14.x
+
+
+PASO 1 — COPIAR LA CARPETA DEL PROYECTO
+────────────────────────────────────────────────────────────────
+Copiar toda la carpeta "POS Esqueleto" a la PC nueva.
+Puede ir en cualquier ubicacion, por ejemplo:
+    C:\POS\
+
+IMPORTANTE: La carpeta ya trae el archivo .env con la clave
+secreta. No hay que crear nada extra ahi.
+
+
+PASO 2 — ABRIR CONSOLA EN LA CARPETA DEL PROYECTO
+────────────────────────────────────────────────────────────────
+Opcion rapida:
+- Abrir la carpeta del proyecto en el Explorador de archivos
+- Hacer clic en la barra de direcciones (donde dice la ruta)
+- Escribir:  cmd
+- Presionar Enter
+
+Quedas con la consola abierta dentro de la carpeta del proyecto.
+
+
+PASO 3 — CREAR EL ENTORNO VIRTUAL
+────────────────────────────────────────────────────────────────
+Ejecutar en la consola:
+
+    python -m venv .venv
+
+Esto crea una carpeta .venv dentro del proyecto.
+Solo se hace UNA vez.
+
+
+PASO 4 — ACTIVAR EL ENTORNO VIRTUAL
+────────────────────────────────────────────────────────────────
+Ejecutar:
+
+    .venv\Scripts\activate
+
+El prompt de la consola cambia y aparece (.venv) al inicio.
+Eso confirma que esta activado.
+
+
+PASO 5 — INSTALAR DEPENDENCIAS
+────────────────────────────────────────────────────────────────
+Con el entorno activado, ejecutar:
+
+    pip install -r requirements.txt
+
+Esto descarga e instala todo lo necesario.
+Puede tardar varios minutos dependiendo de la conexion.
+Esperar a que termine completamente.
+
+
+PASO 6 — CREAR LA BASE DE DATOS
+────────────────────────────────────────────────────────────────
+Ejecutar:
+
+    python manage.py migrate
+
+Crea todas las tablas de la base de datos.
+Al final debe aparecer: "Applying ... OK" para cada item.
+
+
+PASO 7 — CREAR EL USUARIO ADMINISTRADOR
+────────────────────────────────────────────────────────────────
+Ejecutar:
+
+    python manage.py createsuperuser
+
+Pedira:
+  - Username:   escribir el nombre de usuario (ej: admin)
+  - Email:      puede dejarse en blanco (Enter)
+  - Password:   escribir contrasena (no se ve mientras escribe)
+  - Password (again): repetir contrasena
+
+ANOTAR BIEN ESTOS DATOS. Son los que se usan para entrar al POS.
+
+
+PASO 8 — CREAR ACCESO DIRECTO EN EL ESCRITORIO
+────────────────────────────────────────────────────────────────
+- Ir a la carpeta del proyecto
+- Clic derecho en el archivo:  POS.vbs
+- Seleccionar: "Enviar a" → "Escritorio (crear acceso directo)"
+- En el escritorio, clic derecho en el acceso directo → Propiedades
+- Pestana "Acceso directo" → boton "Cambiar icono..."
+- Escribir:  C:\Windows\System32\shell32.dll  y presionar Enter
+- Elegir el icono que mas guste → Aceptar → Aplicar
+
+
+PASO 9 — PRIMERA EJECUCION Y CONFIGURACION INICIAL
+────────────────────────────────────────────────────────────────
+1. Hacer doble clic en el acceso directo del escritorio.
+2. El sistema abre el POS automaticamente.
+3. Entrar con el usuario admin creado en el Paso 7.
+4. Ir a: Configuracion
+   - Llenar nombre del negocio, RIF, telefono, direccion
+   - Guardar
+5. Configurar la tasa BCV:
+   - En la barra superior aparece el badge verde de la tasa
+   - Hacer clic → ingresar la tasa del dia en bolivares
+   - Guardar
+6. Ir a: Inventario
+   - Agregar las categorias del negocio
+   - Agregar los productos con precio en USD y stock inicial
+7. Crear cajeros (si hay empleados):
+   - Ir a: Configuracion → Usuarios
+   - Crear cuenta para cada cajero (sin marcar "Admin")
+
+
+================================================================
+  LISTO. El sistema esta operativo.
+================================================================
+
+NOTAS IMPORTANTES:
+- La base de datos (db.sqlite3) esta dentro de la carpeta
+  del proyecto. Hacer copias de seguridad periodicas de ese
+  archivo para no perder las ventas registradas.
+- Si se mueve la carpeta del proyecto a otra ubicacion,
+  hay que eliminar el acceso directo del escritorio y
+  crear uno nuevo desde la nueva ubicacion (Paso 8).
+- El archivo .env contiene la clave de seguridad del sistema.
+  No compartirlo ni publicarlo.

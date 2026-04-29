@@ -3,6 +3,7 @@ from django.http import JsonResponse
 from django.views.decorators.http import require_POST, require_GET
 from django.template.response import TemplateResponse
 from django.db.models import Count
+from decimal import Decimal
 import json
 import math
 
@@ -17,7 +18,12 @@ def index(request):
     empresa = Empresa.objects.first() or Empresa()
     tasa    = moneda.tasa_cambio if moneda else None
 
-    productos  = Producto.objects.select_related('categoria').order_by('nombre')
+    productos  = list(Producto.objects.select_related('categoria').order_by('nombre'))
+    for p in productos:
+        if p.vendido_por_peso:
+            p.stock_display = f"{float(p.stock_actual):.3f}".rstrip('0').rstrip('.').replace('.', ',')
+        else:
+            p.stock_display = str(int(p.stock_actual))
     categorias = Categoria.objects.order_by('nombre').annotate(num_productos=Count('productos'))
 
     cats_js = [{'id': c.id, 'nombre': c.nombre, 'num': c.num_productos} for c in categorias]
@@ -51,10 +57,11 @@ def guardar_producto(request):
         codigo_barras = data.get('codigo_barras', '').strip() or None
         precio_usd  = data.get('precio_usd')
         costo_usd   = data.get('costo_usd') or None
-        stock_actual = data.get('stock_actual', 0)
-        stock_minimo = data.get('stock_minimo', 5)
-        activo       = str(data.get('activo', 'true')).lower() in ('true', '1', 'on')
-        alicuota_iva = data.get('alicuota_iva', 'GENERAL')
+        stock_actual      = data.get('stock_actual', 0)
+        stock_minimo      = data.get('stock_minimo', 5)
+        vendido_por_peso  = str(data.get('vendido_por_peso', 'false')).lower() in ('true', '1', 'on')
+        activo            = str(data.get('activo', 'true')).lower() in ('true', '1', 'on')
+        alicuota_iva      = data.get('alicuota_iva', 'GENERAL')
 
         if not nombre:
             return JsonResponse({'ok': False, 'error': 'El nombre es obligatorio.'}, status=400)
@@ -63,10 +70,21 @@ def guardar_producto(request):
         if alicuota_iva not in dict(Producto.ALICUOTA_IVA):
             return JsonResponse({'ok': False, 'error': 'Alícuota IVA inválida.'}, status=400)
 
-        precio_usd   = float(precio_usd)
-        costo_usd    = float(costo_usd) if costo_usd else None
-        stock_actual = int(stock_actual)
-        stock_minimo = int(stock_minimo)
+        try:
+            precio_usd = float(precio_usd)
+        except (ValueError, TypeError):
+            return JsonResponse({'ok': False, 'error': 'El precio debe ser un número válido.'}, status=400)
+
+        try:
+            costo_usd = float(costo_usd) if costo_usd else None
+        except (ValueError, TypeError):
+            return JsonResponse({'ok': False, 'error': 'El costo debe ser un número válido.'}, status=400)
+
+        try:
+            stock_actual = float(str(stock_actual).strip())
+            stock_minimo = float(str(stock_minimo).strip())
+        except (ValueError, TypeError):
+            return JsonResponse({'ok': False, 'error': 'El stock debe ser un número válido.'}, status=400)
 
         if math.isnan(precio_usd) or math.isinf(precio_usd) or precio_usd <= 0:
             return JsonResponse({'ok': False, 'error': 'El precio debe ser un número positivo válido.'}, status=400)
@@ -78,6 +96,24 @@ def guardar_producto(request):
             if costo_usd > 999999.99:
                 return JsonResponse({'ok': False, 'error': 'El costo está fuera de rango.'}, status=400)
 
+        if math.isnan(stock_actual) or math.isinf(stock_actual) or stock_actual < 0:
+            return JsonResponse({'ok': False, 'error': 'El stock actual debe ser un número positivo.'}, status=400)
+        if math.isnan(stock_minimo) or math.isinf(stock_minimo) or stock_minimo < 0:
+            return JsonResponse({'ok': False, 'error': 'El stock mínimo debe ser un número positivo.'}, status=400)
+        if stock_actual > 999999 or stock_minimo > 999999:
+            return JsonResponse({'ok': False, 'error': 'El stock está fuera de rango.'}, status=400)
+
+        if vendido_por_peso:
+            stock_actual = Decimal(str(round(stock_actual, 3)))
+            stock_minimo = Decimal(str(round(stock_minimo, 3)))
+        else:
+            if stock_actual != int(stock_actual):
+                return JsonResponse({'ok': False, 'error': 'Para productos por unidad el stock debe ser un número entero, sin decimales.'}, status=400)
+            if stock_minimo != int(stock_minimo):
+                return JsonResponse({'ok': False, 'error': 'El stock mínimo debe ser un número entero, sin decimales.'}, status=400)
+            stock_actual = int(stock_actual)
+            stock_minimo = int(stock_minimo)
+
         categoria    = Categoria.objects.get(pk=categoria_id) if categoria_id else None
 
         if pk:
@@ -85,15 +121,16 @@ def guardar_producto(request):
         else:
             producto = Producto()
 
-        producto.nombre       = nombre
-        producto.categoria    = categoria
-        producto.codigo_barras = codigo_barras
-        producto.precio_usd   = precio_usd
-        producto.costo_usd    = costo_usd
-        producto.stock_actual = stock_actual
-        producto.stock_minimo = stock_minimo
-        producto.activo       = activo
-        producto.alicuota_iva = alicuota_iva
+        producto.nombre           = nombre
+        producto.categoria        = categoria
+        producto.codigo_barras    = codigo_barras
+        producto.precio_usd       = precio_usd
+        producto.costo_usd        = costo_usd
+        producto.vendido_por_peso = vendido_por_peso
+        producto.stock_actual     = stock_actual
+        producto.stock_minimo     = stock_minimo
+        producto.activo           = activo
+        producto.alicuota_iva     = alicuota_iva
 
         if imagen:
             producto.imagen = imagen

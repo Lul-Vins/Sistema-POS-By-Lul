@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pos_extras %}
 
 {% block titulo %}Reportes{% endblock %}
 {% block nav_reportes %}active{% endblock %}
@@ -13,8 +14,8 @@
     border-left: 5px solid;
   }
   .card-resumen.ventas  { border-color: #1a1a2e; }
-  .card-resumen.usd     { border-color: #2d6a4f; }
-  .card-resumen.bs      { border-color: #6c757d; }
+  .card-resumen.usd     { border-color: #6c757d; }
+  .card-resumen.bs      { border-color: #2d6a4f; }
   .card-resumen .label  { font-size:.82rem; color:#6c757d; margin-bottom:.2rem; }
   .card-resumen .valor  { font-size:1.8rem; font-weight:800; color:#1a1a2e; line-height:1.1; }
   .card-resumen .sub    { font-size:.78rem; color:#adb5bd; }
@@ -72,17 +73,17 @@
     </div>
   </div>
   <div class="col-sm-4">
-    <div class="card-resumen usd">
-      <div class="label">Total USD</div>
-      <div class="valor">$ {{ resumen.total_usd|default:"0.00"|floatformat:2 }}</div>
-      <div class="sub">Solo ventas completadas</div>
-    </div>
-  </div>
-  <div class="col-sm-4">
     <div class="card-resumen bs">
       <div class="label">Total Bs.</div>
       <div class="valor">Bs. {{ resumen.total_bs|default:"0.00"|floatformat:2 }}</div>
       <div class="sub">A tasa del momento de cada venta</div>
+    </div>
+  </div>
+  <div class="col-sm-4">
+    <div class="card-resumen usd">
+      <div class="label">Total USD</div>
+      <div class="valor" style="font-size:1.2rem; color:#6c757d;">$ {{ resumen.total_usd|default:"0.00"|floatformat:2 }}</div>
+      <div class="sub">Solo ventas completadas</div>
     </div>
   </div>
 </div>
@@ -97,8 +98,8 @@
         <th>#</th>
         <th>Hora</th>
         <th>Método</th>
-        <th>Total USD</th>
         <th>Total Bs.</th>
+        <th>Total USD</th>
         <th>Tasa</th>
         <th>Estado</th>
         <th></th>
@@ -114,8 +115,8 @@
         <td class="fw-semibold">{{ venta.numero_fmt }}</td>
         <td>{{ venta.fecha|date:"H:i" }}</td>
         <td>{{ venta.get_metodo_pago_display }}</td>
-        <td class="fw-bold text-success">$ {{ venta.total_usd|floatformat:2 }}</td>
-        <td class="text-muted">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+        <td class="fw-bold text-success">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+        <td class="text-muted">$ {{ venta.total_usd|floatformat:2 }}</td>
         <td class="text-muted" style="font-size:.8rem;">{{ venta.tasa_aplicada }}</td>
         <td>
           <span class="badge badge-estado-{{ venta.estado|lower }}">
@@ -138,7 +139,7 @@
           <div class="detalle-items">
             {% for d in venta.detalles.all %}
             <div class="detalle-item">
-              <span>{{ d.cantidad }}x {{ d.producto.nombre }}</span>
+              <span>{{ d.cantidad|formato_cantidad:d.producto.vendido_por_peso }} × {{ d.producto.nombre }}</span>
               <span class="text-muted">$ {{ d.precio_usd_capturado|floatformat:2 }} c/u → <strong>$ {{ d.subtotal_usd|floatformat:2 }}</strong></span>
             </div>
             {% endfor %}
