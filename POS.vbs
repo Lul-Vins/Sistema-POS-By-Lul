@@ -1,7 +1,6 @@
 Set WShell  = CreateObject("WScript.Shell")
 Set FSO     = CreateObject("Scripting.FileSystemObject")
 carpeta     = FSO.GetParentFolderName(WScript.ScriptFullName)
-lockFile    = carpeta & "\pos.lock"
 
 ' ── 1. Control de instancia única (via procesos del sistema) ──
 Set oWMI   = GetObject("winmgmts:\\.\root\cimv2")
