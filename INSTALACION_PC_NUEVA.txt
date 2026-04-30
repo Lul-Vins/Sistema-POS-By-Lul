@@ -24,7 +24,7 @@ Puede ir en cualquier ubicacion, por ejemplo:
 
 IMPORTANTE: La carpeta ya trae el archivo .env con la clave
 secreta. No hay que crear nada extra ahi.
-
+git remote set-url origin https://github.com/Lul-Vins/Sistema-POS-By-Lul.git
 
 PASO 2 — ABRIR CONSOLA EN LA CARPETA DEL PROYECTO
 ────────────────────────────────────────────────────────────────

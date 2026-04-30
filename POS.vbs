@@ -9,15 +9,20 @@ If Not FSO.FileExists(carpeta & "\.venv\Scripts\activate.bat") Then
     WScript.Quit 1
 End If
 
-' ── 2. Iniciar servidor Django oculto ────────────────────────
-WShell.Run "cmd /c cd /d """ & carpeta & """ && " & _
-           "call .venv\Scripts\activate.bat && " & _
-           "python manage.py runserver 0.0.0.0:8000", 0, False
+' ── 2. Verificar si el servidor ya esta corriendo ─────────────
+Dim oExec, sPuerto
+Set oExec = WShell.Exec("cmd /c netstat -ano | findstr ""0.0.0.0:8000 """)
+sPuerto   = oExec.StdOut.ReadAll()
 
-' ── 3. Esperar arranque del servidor (6 seg) ─────────────────
-WScript.Sleep 6000
+If Len(Trim(sPuerto)) = 0 Then
+    ' Puerto libre — levantar servidor Django
+    WShell.Run "cmd /c cd /d """ & carpeta & """ && " & _
+               "call .venv\Scripts\activate.bat && " & _
+               "python manage.py runserver 0.0.0.0:8000", 0, False
+    WScript.Sleep 6000
+End If
 
-' ── 4. Detectar Chrome o Edge ────────────────────────────────
+' ── 3. Detectar Chrome o Edge ────────────────────────────────
 Dim br
 br = ""
 Dim rutas(3)
@@ -42,14 +47,12 @@ If br = "" Then
     WScript.Quit 1
 End If
 
-' ── 5. Abrir POS maximizado y en primer plano ────────────────
-'   Segundo param: 3 = SW_SHOWMAXIMIZED (maximizado + al frente)
-'   Tercer param:  True = esperar a que se cierre la ventana
+' ── 4. Abrir POS maximizado y en primer plano ────────────────
 WShell.Run """" & br & """ " & _
            "--app=http://127.0.0.1:8000 " & _
            "--user-data-dir=""" & carpeta & "\.chrome_pos"" " & _
            "--no-first-run " & _
            "--start-maximized", 3, True
 
-' ── 6. Al cerrar el POS, apagar el servidor ──────────────────
+' ── 5. Al cerrar el POS, apagar el servidor ──────────────────
 WShell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -aon ^| findstr ""0.0.0.0:8000 ""') do taskkill /F /PID %a", 0, True

@@ -17,6 +17,7 @@ if %errorlevel% neq 0 (
 
 echo.
 echo [2/3] Aplicando cambios en base de datos...
+call .venv\Scripts\activate.bat
 python manage.py migrate --no-input
 if %errorlevel% neq 0 (
     echo ERROR: Fallo al actualizar la base de datos.
