@@ -1,28 +1,38 @@
 Set WShell  = CreateObject("WScript.Shell")
 Set FSO     = CreateObject("Scripting.FileSystemObject")
 carpeta     = FSO.GetParentFolderName(WScript.ScriptFullName)
+lockFile    = carpeta & "\pos.lock"
 
-' ── 1. Verificar entorno virtual ─────────────────────────────
+' ── 1. Control de instancia única (via procesos del sistema) ──
+Set oWMI   = GetObject("winmgmts:\\.\root\cimv2")
+Set oProcs = oWMI.ExecQuery("SELECT * FROM Win32_Process WHERE Name='wscript.exe'")
+Dim nInstancias
+nInstancias = 0
+For Each oProc In oProcs
+    If InStr(LCase(oProc.CommandLine), "pos.vbs") > 0 Then
+        nInstancias = nInstancias + 1
+    End If
+Next
+' Si hay mas de 1 wscript corriendo POS.vbs (esta instancia + otra), salir
+If nInstancias > 1 Then
+    WScript.Quit 0
+End If
+
+' ── 2. Verificar entorno virtual ─────────────────────────────
 If Not FSO.FileExists(carpeta & "\.venv\Scripts\activate.bat") Then
     MsgBox "No se encontro el entorno virtual .venv" & vbCrLf & _
            "Contacte al administrador del sistema.", vbCritical, "POS — Error"
     WScript.Quit 1
 End If
 
-' ── 2. Verificar si el servidor ya esta corriendo ─────────────
-Dim oExec, sPuerto
-Set oExec = WShell.Exec("cmd /c netstat -ano | findstr ""0.0.0.0:8000 """)
-sPuerto   = oExec.StdOut.ReadAll()
+' ── 3. Iniciar servidor Django oculto ────────────────────────
+WShell.Run "cmd /c cd /d """ & carpeta & """ && " & _
+           "call .venv\Scripts\activate.bat && " & _
+           "python manage.py runserver 0.0.0.0:8000", 0, False
 
-If Len(Trim(sPuerto)) = 0 Then
-    ' Puerto libre — levantar servidor Django
-    WShell.Run "cmd /c cd /d """ & carpeta & """ && " & _
-               "call .venv\Scripts\activate.bat && " & _
-               "python manage.py runserver 0.0.0.0:8000", 0, False
-    WScript.Sleep 6000
-End If
+WScript.Sleep 6000
 
-' ── 3. Detectar Chrome o Edge ────────────────────────────────
+' ── 4. Detectar Chrome o Edge ────────────────────────────────
 Dim br
 br = ""
 Dim rutas(3)
@@ -47,12 +57,12 @@ If br = "" Then
     WScript.Quit 1
 End If
 
-' ── 4. Abrir POS maximizado y en primer plano ────────────────
+' ── 5. Abrir POS (espera hasta que se cierre la ventana) ─────
 WShell.Run """" & br & """ " & _
            "--app=http://127.0.0.1:8000 " & _
            "--user-data-dir=""" & carpeta & "\.chrome_pos"" " & _
            "--no-first-run " & _
            "--start-maximized", 3, True
 
-' ── 5. Al cerrar el POS, apagar el servidor ──────────────────
+' ── 6. Al cerrar: apagar servidor ────────────────────────────
 WShell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -aon ^| findstr ""0.0.0.0:8000 ""') do taskkill /F /PID %a", 0, True

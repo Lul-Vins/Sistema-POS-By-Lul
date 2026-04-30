@@ -22,3 +22,4 @@ local_settings.py
 # IDEs
 .vscode/
 .idea/
+.chrome_pos 
