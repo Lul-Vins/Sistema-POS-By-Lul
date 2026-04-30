@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pos_extras %}
 
 {% block titulo %}Inventario{% endblock %}
 {% block nav_inventario %}active{% endblock %}
@@ -269,7 +270,7 @@
         </td>
         <td class="fw-bold text-success">
           {% if p.get_precio_bs %}
-            Bs. {{ p.get_precio_bs|floatformat:2 }}{% if p.vendido_por_peso %}<small class="text-muted fw-normal">/kg</small>{% endif %}
+            Bs. {{ p.get_precio_bs|formato_bs }}{% if p.vendido_por_peso %}<small class="text-muted fw-normal">/kg</small>{% endif %}
           {% else %}
             <span class="text-muted">—</span>
           {% endif %}

@@ -94,7 +94,7 @@
   <div class="col-6 col-sm-{% if total_abonos_count %}3{% else %}4{% endif %}">
     <div class="card-resumen bs">
       <div class="label">Total Bs.</div>
-      <div class="valor">Bs. {{ resumen.total_bs|default:"0.00"|floatformat:2 }}</div>
+      <div class="valor">Bs. {{ resumen.total_bs|default:0|formato_bs }}</div>
       <div class="sub">A tasa del momento de cada venta</div>
     </div>
   </div>
@@ -112,7 +112,7 @@
         <i class="bi bi-wallet2 me-1"></i>Abonos cobrados
         <i class="bi bi-chevron-down ms-1" id="abonos-chevron" style="font-size:.7rem; transition:transform .2s;"></i>
       </div>
-      <div class="valor" style="color:#92400e;">Bs. {{ total_abonos_bs|floatformat:2 }}</div>
+      <div class="valor" style="color:#92400e;">Bs. {{ total_abonos_bs|formato_bs }}</div>
       <div class="sub">{{ total_abonos_count }} abono{{ total_abonos_count|pluralize }} · $ {{ total_abonos_usd|floatformat:2 }} USD</div>
     </div>
     <!-- Desplegable compacto anclado bajo la tarjeta -->
@@ -120,7 +120,7 @@
       {% for am in resumen_abonos_lista %}
       <div class="abonos-drop-sep">
         <span>{{ am.nombre }}</span>
-        <span>{% if am.codigo == 'EFECTIVO_USD' %}$ {{ am.total_usd|floatformat:2 }}{% else %}Bs. {{ am.total_bs|floatformat:2 }}{% endif %}</span>
+        <span>{% if am.codigo == 'EFECTIVO_USD' %}$ {{ am.total_usd|floatformat:2 }}{% else %}Bs. {{ am.total_bs|formato_bs }}{% endif %}</span>
       </div>
       {% for pago in am.pagos %}
       <div class="abonos-drop-row">
@@ -129,7 +129,7 @@
           {% if am.codigo == 'EFECTIVO_USD' %}
             $ {{ pago.monto_usd|floatformat:2 }}
           {% else %}
-            Bs. {{ pago.monto_bs|floatformat:2 }}<span class="fw-normal ms-1" style="color:#adb5bd; font-size:.73rem;">· $ {{ pago.monto_usd|floatformat:2 }}</span>
+            Bs. {{ pago.monto_bs|formato_bs }}<span class="fw-normal ms-1" style="color:#adb5bd; font-size:.73rem;">· $ {{ pago.monto_usd|floatformat:2 }}</span>
           {% endif %}
         </span>
       </div>
@@ -167,7 +167,7 @@
         <td class="fw-semibold">{{ venta.numero_fmt }}</td>
         <td>{{ venta.fecha|date:"H:i" }}</td>
         <td>{{ venta.get_metodo_pago_display }}</td>
-        <td class="fw-bold text-success">Bs. {{ venta.total_bs|floatformat:2 }}</td>
+        <td class="fw-bold text-success">Bs. {{ venta.total_bs|formato_bs }}</td>
         <td class="text-muted">$ {{ venta.total_usd|floatformat:2 }}</td>
         <td class="text-muted" style="font-size:.8rem;">{{ venta.tasa_aplicada }}</td>
         <td>
@@ -202,13 +202,13 @@
                 Recibido{% if venta.metodo_pago == 'EFECTIVO_BS' %} (Bs.){% else %} (USD){% endif %}
               </span>
               <span class="fw-semibold">
-                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.monto_recibido|floatformat:2 }}{% else %}$ {{ venta.monto_recibido|floatformat:2 }}{% endif %}
+                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.monto_recibido|formato_bs }}{% else %}$ {{ venta.monto_recibido|floatformat:2 }}{% endif %}
               </span>
             </div>
             <div class="d-flex justify-content-between">
               <span class="text-muted"><i class="bi bi-arrow-return-left me-1"></i>Vuelto</span>
               <span class="fw-bold text-success">
-                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.vuelto|floatformat:2 }}{% else %}$ {{ venta.vuelto|floatformat:2 }}{% endif %}
+                {% if venta.metodo_pago == 'EFECTIVO_BS' %}Bs. {{ venta.vuelto|formato_bs }}{% else %}$ {{ venta.vuelto|floatformat:2 }}{% endif %}
               </span>
             </div>
             {% endif %}

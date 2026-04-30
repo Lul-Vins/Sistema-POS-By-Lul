@@ -107,7 +107,7 @@
       <div class="stat-mini" style="background:#d1fae5;">
         <div class="lbl" style="color:#065f46;">Pagado</div>
         {% if total_pagado_bs %}
-        <div class="val-bs" style="color:#065f46;">Bs. {{ total_pagado_bs|floatformat:2 }}</div>
+        <div class="val-bs" style="color:#065f46;">Bs. {{ total_pagado_bs|formato_bs }}</div>
         <div class="val-usd">≡ $ {{ total_pagado_usd|floatformat:2 }} USD</div>
         {% else %}
         <div class="val-bs" style="color:#065f46;">$ {{ total_pagado_usd|floatformat:2 }} USD</div>
@@ -120,7 +120,7 @@
           Saldo pendiente
         </div>
         <div class="val-bs" style="color:{% if saldo_pendiente > 0 %}#991b1b{% else %}#6c757d{% endif %};">
-          {% if saldo_pendiente_bs_hoy %}Bs. {{ saldo_pendiente_bs_hoy|floatformat:2 }}{% else %}$ {{ saldo_pendiente|floatformat:2 }}{% endif %}
+          {% if saldo_pendiente_bs_hoy %}Bs. {{ saldo_pendiente_bs_hoy|formato_bs }}{% else %}$ {{ saldo_pendiente|floatformat:2 }}{% endif %}
         </div>
         {% if saldo_pendiente_bs_hoy %}
         <div class="val-usd">≡ $ {{ saldo_pendiente|floatformat:2 }} USD</div>
@@ -160,7 +160,7 @@
           {% if f.saldo_calc > 0 %}
           <span class="text-danger" style="font-size:.88rem;">
             Debe hoy:
-            <strong>{% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|floatformat:2 }}{% else %}$ {{ f.saldo_calc|floatformat:2 }}{% endif %}</strong>
+            <strong>{% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|formato_bs }}{% else %}$ {{ f.saldo_calc|floatformat:2 }}{% endif %}</strong>
             <span class="text-muted" style="font-size:.77rem;">($ {{ f.saldo_calc|floatformat:2 }} USD)</span>
           </span>
           {% endif %}
@@ -216,7 +216,7 @@
                   </tr>
                   <tr class="text-muted" style="font-size:.76rem;">
                     <td colspan="3" class="text-end ps-0 pt-0 pb-0 pe-0">
-                      Bs. {{ f.total_bs|floatformat:2 }} (tasa {{ f.tasa_aplicada }})
+                      Bs. {{ f.total_bs|formato_bs }} (tasa {{ f.tasa_aplicada }})
                     </td>
                   </tr>
                 </tfoot>
@@ -233,20 +233,20 @@
                   <tr>
                     <td class="ps-0 text-muted py-1" style="white-space:nowrap;">{{ p.fecha|date:"d/m H:i" }}</td>
                     <td class="py-1 text-muted">{{ p.get_metodo_pago_display }}</td>
-                    <td class="text-end fw-semibold py-1 pe-0">Bs. {{ p.monto_bs|floatformat:2 }}</td>
+                    <td class="text-end fw-semibold py-1 pe-0">Bs. {{ p.monto_bs|formato_bs }}</td>
                   </tr>
                   {% endfor %}
                 </tbody>
                 <tfoot style="border-top:1px solid #dee2e6;">
                   <tr class="fw-semibold">
                     <td colspan="2" class="text-end ps-0 pt-2 pb-0">Pagado</td>
-                    <td class="text-end pt-2 pb-0 pe-0">Bs. {{ f.pagado_bs_calc|floatformat:2 }}</td>
+                    <td class="text-end pt-2 pb-0 pe-0">Bs. {{ f.pagado_bs_calc|formato_bs }}</td>
                   </tr>
                   {% if f.saldo_calc > 0 %}
                   <tr class="text-danger fw-semibold">
                     <td colspan="2" class="text-end ps-0 pt-1 pb-0">Saldo hoy</td>
                     <td class="text-end pt-1 pb-0 pe-0">
-                      {% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|floatformat:2 }}{% else %}$ {{ f.saldo_calc|floatformat:2 }}{% endif %}
+                      {% if f.saldo_bs_hoy %}Bs. {{ f.saldo_bs_hoy|formato_bs }}{% else %}$ {{ f.saldo_calc|floatformat:2 }}{% endif %}
                     </td>
                   </tr>
                   {% endif %}

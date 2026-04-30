@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pos_extras %}
 
 {% block titulo %}Mis Ventas{% endblock %}
 {% block nav_mis_ventas %}active{% endblock %}
@@ -53,7 +54,7 @@
       <div class="stat-lbl">Ventas</div>
     </div>
     <div>
-      <div class="stat-val">Bs. {{ resumen.total_bs|default:"0.00"|floatformat:2 }}</div>
+      <div class="stat-val">Bs. {{ resumen.total_bs|default:0|formato_bs }}</div>
       <div class="stat-lbl">Total cobrado</div>
     </div>
     <div class="ms-auto text-end">
@@ -82,7 +83,7 @@
           <td class="fw-semibold text-muted">{{ v.numero_fmt }}</td>
           <td>{{ v.fecha|date:"H:i" }}</td>
           <td>{{ v.get_metodo_pago_display }}</td>
-          <td class="text-end fw-semibold">{{ v.total_bs|floatformat:2 }}</td>
+          <td class="text-end fw-semibold">{{ v.total_bs|formato_bs }}</td>
           <td class="text-center">
             <span class="badge rounded-pill {% if v.estado == 'COMPLETADA' %}badge-completada{% else %}badge-anulada{% endif %}">
               {{ v.get_estado_display }}
@@ -105,7 +106,7 @@
                 <tr>
                   <td class="ps-4">{{ d.producto.nombre }}</td>
                   <td class="text-center">{{ d.cantidad }}</td>
-                  <td class="text-end pe-4">{{ d.subtotal_bs|floatformat:2 }}</td>
+                  <td class="text-end pe-4">{{ d.subtotal_bs|formato_bs }}</td>
                 </tr>
                 {% endfor %}
               </tbody>

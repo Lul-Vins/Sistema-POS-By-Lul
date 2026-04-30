@@ -1,0 +1,1856 @@
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Venta — Sinag</title>
+
+  <!-- Bootstrap 5 (local) -->
+  <link href="/static/vendor/bootstrap/css/bootstrap.min.css" rel="stylesheet">
+  <!-- Bootstrap Icons (local) -->
+  <link href="/static/vendor/bootstrap-icons/css/bootstrap-icons.min.css" rel="stylesheet">
+
+  <style>
+    /* ── Tipografía global ─────────────────────────────────── */
+    body {
+      font-family: 'Segoe UI', system-ui, sans-serif;
+      font-size: 1.05rem;
+      background-color: #f4f6f9;
+    }
+
+    /* ── Navbar ────────────────────────────────────────────── */
+    .navbar-pos {
+      background-color: #1a1a2e;
+      min-height: 58px;
+    }
+    .navbar-pos .navbar-brand {
+      font-size: 1.3rem;
+      font-weight: 700;
+      color: #ffffff;
+      letter-spacing: 0.5px;
+    }
+    .navbar-pos .nav-link {
+      color: #c8cdd8;
+      font-size: 0.95rem;
+    }
+    .navbar-pos .nav-link:hover,
+    .navbar-pos .nav-link.active {
+      color: #ffffff;
+    }
+
+    /* Badge de tasa — clickeable */
+    .tasa-badge {
+      background-color: #2d6a4f;
+      color: #fff;
+      font-size: 0.85rem;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-weight: 600;
+      cursor: pointer;
+      border: none;
+      transition: background-color 0.15s;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    .tasa-badge:hover {
+      background-color: #1b4332;
+    }
+    .tasa-badge.sin-tasa {
+      background-color: #842029;
+    }
+    .tasa-badge .bi-pencil-fill {
+      font-size: 0.7rem;
+      opacity: 0.8;
+    }
+
+    /* ── Botón apagar ──────────────────────────────────────── */
+    .btn-apagar {
+      width: 34px;
+      height: 34px;
+      border-radius: 50%;
+      border: 1.5px solid rgba(220, 53, 69, 0.45);
+      background: transparent;
+      color: rgba(220, 53, 69, 0.75);
+      font-size: 1rem;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      transition: background .15s, border-color .15s, color .15s;
+      padding: 0;
+      flex-shrink: 0;
+    }
+    .btn-apagar:hover {
+      background: rgba(220, 53, 69, 0.15);
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+
+    /* ── Contenido principal ───────────────────────────────── */
+    .content-wrapper {
+      padding-top: 1.5rem;
+      padding-bottom: 2rem;
+    }
+
+    /* ── Modal de tasa ─────────────────────────────────────── */
+    .modal-tasa .modal-header {
+      background-color: #1a1a2e;
+      color: #fff;
+      border-bottom: none;
+    }
+    .modal-tasa .btn-close {
+      filter: invert(1);
+    }
+    .modal-tasa .tasa-actual-display {
+      font-size: 2rem;
+      font-weight: 800;
+      color: #2d6a4f;
+      text-align: center;
+      padding: 0.5rem 0;
+    }
+    .modal-tasa .ultima-act {
+      font-size: 0.8rem;
+      color: #6c757d;
+      text-align: center;
+      margin-bottom: 1rem;
+    }
+    .modal-tasa .input-nueva-tasa {
+      font-size: 1.3rem;
+      font-weight: 700;
+      text-align: center;
+      border: 2px solid #dee2e6;
+      border-radius: 8px;
+      padding: 0.5rem;
+    }
+    .modal-tasa .input-nueva-tasa:focus {
+      border-color: #2d6a4f;
+      box-shadow: 0 0 0 3px rgba(45,106,79,0.15);
+    }
+    .modal-tasa .nota-bcv {
+      font-size: 0.78rem;
+      color: #6c757d;
+      background-color: #f8f9fa;
+      border-left: 3px solid #ffc107;
+      padding: 0.5rem 0.75rem;
+      border-radius: 0 6px 6px 0;
+      margin-top: 0.75rem;
+    }
+    .modal-tasa .btn-guardar-tasa {
+      background-color: #2d6a4f;
+      color: #fff;
+      border: none;
+      font-weight: 700;
+      padding: 0.6rem 1.5rem;
+      border-radius: 8px;
+      font-size: 1rem;
+    }
+    .modal-tasa .btn-guardar-tasa:hover {
+      background-color: #1b4332;
+    }
+    .modal-tasa .feedback {
+      font-size: 0.85rem;
+      min-height: 1.2rem;
+      text-align: center;
+    }
+  </style>
+
+  
+<style>
+  /* ── Layout principal: dos columnas ───────────────────────── */
+  .pos-wrapper {
+    display: flex;
+    gap: 1.25rem;
+    height: calc(100vh - 90px); /* viewport menos navbar */
+  }
+
+  /* ── Columna izquierda: búsqueda + productos ──────────────── */
+  .col-productos {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    overflow-x: clip; /* evita que los chips desborden hacia el carrito */
+  }
+
+  .buscador-wrap {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    background-color: #f4f6f9;
+    padding-bottom: 0.75rem;
+  }
+
+  .buscador-wrap .input-group {
+    box-shadow: 0 2px 8px rgba(0,0,0,0.10);
+    border-radius: 10px;
+    overflow: hidden;
+  }
+
+  #buscador {
+    font-size: 1.2rem;
+    padding: 0.65rem 1rem;
+    border: none;
+    outline: none;
+  }
+
+  #buscador:focus {
+    box-shadow: none;
+  }
+
+  .btn-limpiar {
+    background-color: #e9ecef;
+    border: none;
+    padding: 0 1rem;
+    font-size: 1.1rem;
+    color: #6c757d;
+  }
+
+  /* ── Grid de productos ─────────────────────────────────────── */
+  .productos-scroll {
+    flex: 1;
+    overflow-y: auto;
+    padding-right: 4px;
+    padding-top: 6px; /* buffer para que la sombra no se corte */
+  }
+
+  .producto-card {
+    cursor: pointer;
+    border: 2px solid transparent;
+    border-radius: 12px;
+    /* Sin translateY: evita colisión con la barra de búsqueda */
+    transition: border-color 0.15s, box-shadow 0.15s;
+    background: #fff;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .producto-card:hover {
+    border-color: #2d6a4f;
+    box-shadow: 0 6px 18px rgba(0,0,0,0.13);
+  }
+
+  .producto-card:active {
+    transform: scale(0.97);
+  }
+
+  /* Zona de imagen */
+  .producto-card .card-img-wrap {
+    height: 90px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f8f9fa;
+    border-radius: 10px 10px 0 0;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .producto-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    padding: 6px;
+  }
+
+  .producto-card .placeholder-icon {
+    font-size: 2rem;
+    color: #dee2e6;
+  }
+
+  .producto-card .card-body {
+    padding: 0.45rem 0.6rem 0.55rem;
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+    flex: 1;
+  }
+
+  .producto-card .nombre {
+    font-size: 0.8rem;
+    font-weight: 600;
+    line-height: 1.2;
+    color: #212529;
+    display: -webkit-box;
+    -webkit-line-clamp: 2;
+    -webkit-box-orient: vertical;
+    line-clamp: 2;
+    overflow: hidden;
+  }
+
+  .producto-card .precio-bs {
+    font-size: 0.95rem;
+    font-weight: 800;
+    color: #2d6a4f;
+    margin-top: 3px;
+  }
+
+  .producto-card .precio-usd {
+    font-size: 0.72rem;
+    color: #6c757d;
+  }
+
+  .producto-card .stock-info {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    margin-top: 5px;
+    font-size: 0.73rem;
+    font-weight: 600;
+    color: #3d6b52;
+    background: #f0fdf4;
+    border-radius: 5px;
+    padding: 2px 6px;
+  }
+  .producto-card .stock-info.bajo {
+    color: #856404;
+    background: #fefce8;
+  }
+
+  .badge-stock-bajo {
+    font-size: 0.6rem;
+    background-color: #fff3cd;
+    color: #856404;
+    border: 1px solid #ffc107;
+    width: fit-content;
+    margin-top: 3px;
+  }
+
+  /* ── Chips de categoría ───────────────────────────────────── */
+  .cat-chips-nav {
+    display: flex;
+    align-items: center;
+    gap: .3rem;
+  }
+  .chips-nav-btn {
+    flex-shrink: 0;
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: .7rem;
+    color: #6c757d;
+    padding: 0;
+    box-shadow: 0 1px 3px rgba(0,0,0,.08);
+    transition: all .12s;
+  }
+  .chips-nav-btn:hover { border-color: #2d6a4f; color: #2d6a4f; }
+
+  .cat-chips-wrap {
+    flex: 1;
+    display: flex;
+    gap: .4rem;
+    overflow-x: auto;
+    padding: .5rem 0 .15rem;
+    scrollbar-width: none;
+    min-width: 0;
+  }
+  .cat-chips-wrap::-webkit-scrollbar { display: none; }
+
+  .cat-chip {
+    flex-shrink: 0;
+    padding: .28rem .85rem;
+    border-radius: 20px;
+    border: 1.5px solid #dee2e6;
+    background: #fff;
+    font-size: .78rem;
+    font-weight: 500;
+    color: #495057;
+    cursor: pointer;
+    transition: all .12s;
+    white-space: nowrap;
+  }
+  .cat-chip:hover  { border-color: #2d6a4f; color: #2d6a4f; }
+  .cat-chip.activa { background: #2d6a4f; border-color: #2d6a4f; color: #fff; font-weight: 700; }
+
+  /* Sin resultados */
+  .sin-resultados {
+    text-align: center;
+    color: #adb5bd;
+    padding: 3rem 0;
+  }
+
+  .sin-resultados i {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 0.5rem;
+  }
+
+  /* ── Columna derecha: carrito (sticky) ────────────────────── */
+  .col-carrito {
+    width: 360px;
+    flex-shrink: 0;
+    display: flex;
+    flex-direction: column;
+    background: #fff;
+    border-radius: 14px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.09);
+    overflow: hidden;
+    position: sticky;
+    top: 0;
+    height: calc(100vh - 90px);
+  }
+
+  .carrito-header {
+    background-color: #1a1a2e;
+    color: #fff;
+    padding: 1rem 1.25rem;
+    font-size: 1.1rem;
+    font-weight: 700;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    flex-shrink: 0;
+  }
+
+  .carrito-header .badge-count {
+    background-color: #2d6a4f;
+    font-size: 0.85rem;
+    padding: 3px 9px;
+    border-radius: 20px;
+  }
+
+  /* Items del carrito */
+  .carrito-items {
+    flex: 1;
+    overflow-y: auto;
+    padding: 0.75rem 1rem;
+  }
+
+  .carrito-vacio {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #ced4da;
+  }
+
+  .carrito-vacio i {
+    font-size: 3.5rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .carrito-item {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.6rem 0;
+    border-bottom: 1px solid #f0f0f0;
+  }
+
+  .carrito-item:last-child {
+    border-bottom: none;
+  }
+
+  .carrito-item.stock-error {
+    border-left: 3px solid #dc3545;
+    background: #fff5f5;
+    padding-left: calc(0.6rem - 3px);
+  }
+
+  .carrito-item .stock-alerta {
+    font-size: .68rem;
+    color: #dc3545;
+    line-height: 1.3;
+    margin-top: 1px;
+    width: 100%;
+  }
+
+  .qty-num-unit {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 5px;
+    transition: background .12s;
+  }
+  .qty-num-unit:hover { background: #e9ecef; }
+
+  .carrito-item .item-info {
+    flex: 1;
+    min-width: 0; /* permite que el texto se comprima en el flex */
+  }
+
+  .carrito-item .item-nombre {
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.2;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .carrito-item .item-precio {
+    font-size: 0.82rem;
+    color: #6c757d;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  .carrito-item .item-subtotal {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #2d6a4f;
+    white-space: nowrap;
+  }
+
+  /* Control de cantidad */
+  .qty-control {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+  }
+
+  .qty-control button {
+    width: 26px;
+    height: 26px;
+    border-radius: 6px;
+    border: 1px solid #dee2e6;
+    background: #f8f9fa;
+    font-size: 1rem;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #495057;
+    transition: background 0.1s;
+  }
+
+  .qty-control button:hover {
+    background: #e9ecef;
+  }
+
+  .qty-control .qty-num {
+    min-width: 28px;
+    text-align: center;
+    font-size: 0.95rem;
+    font-weight: 700;
+  }
+
+  /* ── Footer del carrito: totales + cobrar ─────────────────── */
+  .carrito-footer {
+    flex-shrink: 0;
+    border-top: 2px solid #f0f0f0;
+    padding: 1rem 1.25rem;
+  }
+
+  .total-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 0.3rem;
+  }
+
+  .total-row .label {
+    font-size: 0.9rem;
+    color: #6c757d;
+  }
+
+  .total-row .valor-usd {
+    font-size: 0.9rem;
+    font-weight: 400;
+    color: #6c757d;
+  }
+
+  .total-row .valor-bs {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: #1a1a2e;
+  }
+
+  .btn-cobrar {
+    width: 100%;
+    padding: 0.75rem;
+    font-size: 1.15rem;
+    font-weight: 700;
+    background-color: #2d6a4f;
+    color: #fff;
+    border: none;
+    border-radius: 10px;
+    margin-top: 0.75rem;
+    transition: background-color 0.15s;
+  }
+
+  .btn-cobrar:hover:not(:disabled) {
+    background-color: #1b4332;
+  }
+
+  .btn-cobrar:disabled {
+    background-color: #ced4da;
+    cursor: not-allowed;
+  }
+
+  .btn-vaciar {
+    width: 100%;
+    font-size: 0.85rem;
+    color: #dc3545;
+    background: none;
+    border: none;
+    margin-top: 0.4rem;
+    cursor: pointer;
+  }
+
+  .btn-vaciar:hover {
+    text-decoration: underline;
+  }
+</style>
+
+</head>
+
+<body>
+
+  <!-- ══ NAVBAR ══════════════════════════════════════════════ -->
+  <nav class="navbar navbar-expand-lg navbar-pos px-3">
+    <a class="navbar-brand" href="/">
+      <i class="bi bi-shop me-2"></i>Sinag
+    </a>
+
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navMenu">
+      <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navMenu">
+      <ul class="navbar-nav me-auto ms-3 gap-1">
+        <li class="nav-item">
+          <a class="nav-link active" href="/">
+            <i class="bi bi-cart3 me-1"></i>Venta
+          </a>
+        </li>
+        
+        <li class="nav-item">
+          <a class="nav-link " href="/inventario/">
+            <i class="bi bi-box-seam me-1"></i>Inventario
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="/reportes/">
+            <i class="bi bi-bar-chart-line me-1"></i>Reportes
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="/fiados/">
+            <i class="bi bi-people me-1"></i>Fiados
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link " href="/configuracion/">
+            <i class="bi bi-gear me-1"></i>Configuración
+          </a>
+        </li>
+        
+      </ul>
+
+      <!-- Badge de tasa: clickeable para editar (solo admin) -->
+      
+      <button
+        class="tasa-badge me-3 "
+        id="btn-abrir-tasa"
+        data-bs-toggle="modal"
+        data-bs-target="#modalTasa"
+        title="Clic para actualizar tasa BCV"
+      >
+        <i class="bi bi-currency-dollar"></i>
+        <span id="tasa-navbar-texto">
+          1 = Bs. 500,00
+        </span>
+        <i class="bi bi-pencil-fill"></i>
+      </button>
+      
+
+      <!-- Usuario y logout -->
+      
+      <div class="d-flex align-items-center gap-2 me-2">
+        <span class="badge bg-warning text-dark fs-6 px-3 py-2">
+          <i class="bi bi-person-fill me-1"></i>
+          Jose Gregorio
+          <span class="opacity-75 ms-1 small">Admin</span>
+        </span>
+        <form method="post" action="/logout/" class="d-inline m-0">
+          <input type="hidden" name="csrfmiddlewaretoken" value="bCTMNkHThtunAxlr8nnGsuFxLYjkzCsovk7KxfCRrttgpYAjuscZlPdlmCMZUISU">
+          <button type="submit" class="btn btn-outline-light btn-sm" title="Cerrar sesión">
+            <i class="bi bi-box-arrow-right"></i>
+          </button>
+        </form>
+      </div>
+      
+
+    </div>
+  </nav>
+  <!-- ══ FIN NAVBAR ═══════════════════════════════════════════ -->
+
+
+  <!-- ══ MODAL: ACTUALIZAR TASA BCV ══════════════════════════ -->
+  <div class="modal fade modal-tasa" id="modalTasa" tabindex="-1" aria-labelledby="modalTasaLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered modal-sm">
+      <div class="modal-content">
+
+        <div class="modal-header">
+          <h5 class="modal-title" id="modalTasaLabel">
+            <i class="bi bi-bank me-2"></i>Tasa BCV
+          </h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+        </div>
+
+        <div class="modal-body">
+          <div class="tasa-actual-display" id="tasa-actual-display">
+            Bs. 500,00
+          </div>
+          <div class="ultima-act" id="ultima-act">
+            Última actualización: 30/04/2026 07:14
+          </div>
+
+          <label class="form-label fw-semibold">Nueva tasa del día</label>
+          <input
+            type="number"
+            id="input-nueva-tasa"
+            class="form-control input-nueva-tasa"
+            placeholder="Ej: 471.50"
+            min="0.01"
+            step="0.01"
+          >
+
+          <div class="nota-bcv mt-2">
+            <i class="bi bi-info-circle me-1"></i>
+            La tasa BCV se publica de lunes a viernes entre 4–5 pm y entra en vigencia el siguiente día hábil.
+          </div>
+
+          <div class="feedback mt-2" id="tasa-feedback"></div>
+        </div>
+
+        <div class="modal-footer border-0 pt-0">
+          <button type="button" class="btn-guardar-tasa w-100" id="btn-guardar-tasa">
+            <i class="bi bi-check-lg me-1"></i>Guardar tasa
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </div>
+  <!-- ══ FIN MODAL TASA ═══════════════════════════════════════ -->
+
+
+  <div class="content-wrapper container-fluid">
+    
+<div class="pos-wrapper">
+
+  <!-- ══ COLUMNA IZQUIERDA: PRODUCTOS ══════════════════════════ -->
+  <div class="col-productos">
+
+    <!-- Buscador sticky -->
+    <div class="buscador-wrap">
+
+      
+
+      <div class="input-group">
+        <span class="input-group-text bg-white border-0 ps-3">
+          <i class="bi bi-search text-muted fs-5"></i>
+        </span>
+        <input
+          type="text"
+          id="buscador"
+          class="form-control"
+          placeholder="Buscar producto o escanear código de barras..."
+          autocomplete="off"
+          autofocus
+        >
+        <button class="btn-limpiar" id="btn-limpiar" title="Limpiar">
+          <i class="bi bi-x-lg"></i>
+        </button>
+      </div>
+
+      
+      <div class="cat-chips-nav">
+        <button class="chips-nav-btn" id="chips-prev" onclick="scrollChips(-1)" style="display:none" title="Anterior">
+          <i class="bi bi-chevron-left"></i>
+        </button>
+        <div class="cat-chips-wrap" id="cat-chips-wrap">
+          <button class="cat-chip activa" data-cat-id=""
+                  onclick="seleccionarCategoria(null, this)">
+            <i class="bi bi-grid-fill me-1"></i>Todos
+          </button>
+          
+          <button class="cat-chip" data-cat-id="1"
+                  onclick="seleccionarCategoria(1, this)">
+            Carnes
+          </button>
+          
+          <button class="cat-chip" data-cat-id="2"
+                  onclick="seleccionarCategoria(2, this)">
+            Viveres
+          </button>
+          
+        </div>
+        <button class="chips-nav-btn" id="chips-next" onclick="scrollChips(1)" style="display:none" title="Siguiente">
+          <i class="bi bi-chevron-right"></i>
+        </button>
+      </div>
+      
+    </div>
+
+    <!-- Grid de productos (se llena por AJAX) -->
+    <div class="productos-scroll">
+
+      <!-- Estado inicial -->
+      <div id="estado-inicial" class="sin-resultados">
+        <i class="bi bi-search"></i>
+        <span>Busca un producto o escanea un código de barras</span>
+      </div>
+
+      <!-- Spinner de carga -->
+      <div id="estado-cargando" class="sin-resultados" style="display:none;">
+        <div class="spinner-border text-secondary" role="status" style="width:2rem;height:2rem;"></div>
+        <span class="mt-2">Buscando...</span>
+      </div>
+
+      <!-- Sin resultados -->
+      <div id="estado-sin-resultados" class="sin-resultados" style="display:none;">
+        <i class="bi bi-emoji-frown"></i>
+        <span>Sin resultados para "<strong id="termino-busqueda"></strong>"</span>
+      </div>
+
+      <div class="row row-cols-3 row-cols-md-4 row-cols-xl-5 g-2" id="productos-grid"></div>
+
+    </div>
+
+  </div>
+  <!-- ══ FIN COLUMNA IZQUIERDA ══════════════════════════════════ -->
+
+
+  <!-- ══ COLUMNA DERECHA: CARRITO (STICKY) ══════════════════════ -->
+  <div class="col-carrito">
+
+    <div class="carrito-header">
+      <span><i class="bi bi-cart3 me-2"></i>Carrito</span>
+      <span class="badge-count" id="carrito-count">0</span>
+    </div>
+
+    <div class="carrito-items" id="carrito-items">
+      <div class="carrito-vacio" id="carrito-vacio">
+        <i class="bi bi-cart-x"></i>
+        <span>El carrito está vacío</span>
+      </div>
+    </div>
+
+    <div class="carrito-footer">
+      <div class="total-row">
+        <span class="label">Total Bs.</span>
+        <span class="valor-bs" id="total-bs">Bs. 0,00</span>
+      </div>
+      <div class="total-row">
+        <span class="label">Total USD</span>
+        <span class="valor-usd" id="total-usd">$ 0.00</span>
+      </div>
+
+      <div id="alerta-tasa-vencida"
+           class="alert alert-danger py-2 px-3 mb-2 d-flex align-items-start gap-2"
+           style="font-size:.82rem; border-radius:8px; display:none!important;">
+        <i class="bi bi-exclamation-triangle-fill mt-1 flex-shrink-0"></i>
+        <div>
+          <strong>Tasa BCV desactualizada.</strong><br>
+          El sistema no puede procesar ventas hasta que el administrador actualice la tasa del día.
+        </div>
+      </div>
+      <button class="btn-cobrar" id="btn-cobrar"
+              disabled
+              onclick="abrirModalCobro()">
+        
+        <i class="bi bi-cash-coin me-2"></i>Cobrar
+        
+      </button>
+      <button class="btn-vaciar" id="btn-vaciar" onclick="vaciarCarrito()">
+        <i class="bi bi-trash me-1"></i>Vaciar carrito
+      </button>
+    </div>
+
+  </div>
+  <!-- ══ FIN CARRITO ════════════════════════════════════════════ -->
+
+</div>
+
+
+<!-- ══ MODAL DE COBRO ══════════════════════════════════════════ -->
+<div class="modal fade" id="modalCobro" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:480px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-header border-0" style="background:#1a1a2e; color:#fff;">
+        <h5 class="modal-title fw-bold"><i class="bi bi-cash-coin me-2"></i>Confirmar Cobro</h5>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+      </div>
+
+      <div class="modal-body px-4 pt-3 pb-2">
+
+        <!-- Resumen de totales -->
+        <div class="d-flex justify-content-between align-items-center mb-1">
+          <span class="text-muted" style="font-size:.9rem;">Total a cobrar</span>
+        </div>
+        <div class="d-flex justify-content-between align-items-baseline mb-1">
+          <span style="font-size:2rem; font-weight:800; color:#1a1a2e;" id="cobro-total-bs">Bs. 0,00</span>
+          <span style="font-size:1.1rem; color:#6c757d;" id="cobro-total-usd">$ 0.00</span>
+        </div>
+        <hr class="my-2">
+
+        <!-- Método de pago -->
+        <p class="fw-semibold mb-2" style="font-size:.9rem;">Método de pago</p>
+        <div class="d-flex flex-wrap gap-2 mb-3" id="metodos-pago">
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-EFECTIVO_USD" value="EFECTIVO_USD" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-EFECTIVO_USD">Efectivo USD</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-EFECTIVO_BS" value="EFECTIVO_BS" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-EFECTIVO_BS">Efectivo Bs</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-TRANSFERENCIA" value="TRANSFERENCIA" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-TRANSFERENCIA">Transferencia</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-PAGO_MOVIL" value="PAGO_MOVIL" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-PAGO_MOVIL">Pago Móvil</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-PUNTO_DE_VENTA" value="PUNTO_DE_VENTA" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-PUNTO_DE_VENTA">PdV (Tarjeta)</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-BIOPAGO" value="BIOPAGO" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-BIOPAGO">Biopago</label>
+          
+          <input type="radio" class="btn-check" name="metodo" id="mp-MIXTO" value="MIXTO" autocomplete="off">
+          <label class="btn btn-outline-secondary btn-sm px-3" for="mp-MIXTO">Pago Mixto</label>
+          
+        </div>
+
+        <!-- Monto recibido + vuelto (solo efectivo) -->
+        <div id="bloque-vuelto" style="display:none;">
+          <label class="fw-semibold mb-1" style="font-size:.9rem;" id="label-monto-recibido">Monto recibido (USD)</label>
+          <input type="number" id="monto-recibido" class="form-control mb-2" placeholder="0.00" min="0" step="0.01" max="9999999" style="font-size:1.1rem; font-weight:700;">
+          <div class="d-flex justify-content-between px-1">
+            <span class="text-muted" style="font-size:.85rem;">Vuelto</span>
+            <span id="vuelto-display" style="font-size:1rem; font-weight:700; color:#2d6a4f;">$ 0.00</span>
+          </div>
+          <hr class="mt-2 mb-2">
+        </div>
+
+        <!-- Notas opcionales -->
+        <textarea id="cobro-notas" class="form-control" rows="1" placeholder="Notas (opcional)" style="font-size:.85rem; resize:none;" maxlength="500"></textarea>
+
+        <!-- Feedback -->
+        <div id="cobro-feedback" class="mt-2 text-danger" style="font-size:.85rem; min-height:1.2rem;"></div>
+      </div>
+
+      <div class="modal-footer border-0 px-4 pb-4 pt-1">
+        <button type="button" class="btn btn-light w-100 mb-2" data-bs-dismiss="modal">Cancelar</button>
+        <button type="button" class="w-100 fw-bold text-white border-0 py-3 rounded-3"
+                id="btn-confirmar-cobro"
+                style="background:#2d6a4f; font-size:1.1rem;">
+          <i class="bi bi-check-circle me-2"></i>Confirmar venta
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL COBRO ══════════════════════════════════════════ -->
+
+
+<!-- ══ MODAL POST-COBRO ════════════════════════════════════════ -->
+<div class="modal fade" id="modalPostCobro" tabindex="-1" aria-hidden="true"
+     data-bs-backdrop="static" data-bs-keyboard="false">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:400px;">
+    <div class="modal-content border-0 shadow">
+
+      <div class="modal-body text-center px-4 py-4">
+        <div style="font-size:2.8rem; margin-bottom:.5rem;">✅</div>
+        <div style="font-size:1.2rem; font-weight:800; color:#1b4332;" id="pc-titulo">
+          Venta registrada
+        </div>
+        <div style="font-size:1.6rem; font-weight:800; color:#1a1a2e; margin:.4rem 0 .1rem;"
+             id="pc-total-usd"></div>
+        <div style="font-size:1rem; color:#6c757d;" id="pc-total-bs"></div>
+        <div style="font-size:.85rem; color:#6c757d; margin-top:.3rem;" id="pc-venta-id"></div>
+      </div>
+
+      <div class="modal-footer border-0 flex-column gap-2 px-4 pb-4 pt-0">
+        <div id="pc-ticket-status" style="font-size:.85rem; display:none;"></div>
+        <button type="button" id="pc-btn-ticket"
+                class="btn w-100 fw-bold py-2"
+                style="background:#1a1a2e; color:#fff; display:none;">
+          <i class="bi bi-printer me-2"></i>Imprimir ticket manualmente
+        </button>
+        <button type="button" id="pc-btn-nueva"
+                class="btn btn-outline-secondary w-100 fw-semibold py-2">
+          <i class="bi bi-plus-circle me-1"></i>Nueva venta
+        </button>
+      </div>
+
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL POST-COBRO ════════════════════════════════════ -->
+
+
+<!-- ══ MODAL: CANTIDAD EN KG ═══════════════════════════════════ -->
+<div class="modal fade" id="modalKg" tabindex="-1" aria-hidden="true">
+  <div class="modal-dialog modal-dialog-centered" style="max-width:320px;">
+    <div class="modal-content border-0 shadow">
+      <div class="modal-header border-0 pb-1" style="background:#1a1a2e; color:#fff;">
+        <div>
+          <div class="fw-bold" id="kg-dialog-nombre" style="font-size:1rem;"></div>
+          <div class="opacity-75" id="kg-dialog-precio" style="font-size:.82rem;"></div>
+        </div>
+        <button type="button" class="btn-close btn-close-white ms-auto" data-bs-dismiss="modal"></button>
+      </div>
+      <div class="modal-body px-4 pt-3 pb-2">
+        <label class="form-label fw-semibold mb-1">¿Cuántos kg?</label>
+        <input type="number" id="kg-input" class="form-control"
+               style="font-size:1.4rem; font-weight:700; text-align:center;"
+               placeholder="0,000" min="0.001" step="0.001" max="9999">
+        <div id="kg-feedback" class="text-danger mt-1" style="font-size:.82rem; min-height:1rem;"></div>
+      </div>
+      <div class="modal-footer border-0 pt-0 pb-3 px-4">
+        <button type="button" class="btn w-100 fw-bold text-white py-2" id="btn-kg-ok"
+                style="background:#2d6a4f; border-radius:8px; font-size:1rem;">
+          <i class="bi bi-check-lg me-1"></i>Agregar al carrito
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+<!-- ══ FIN MODAL KG ═════════════════════════════════════════════ -->
+
+
+  </div>
+
+  <script src="/static/vendor/bootstrap/js/bootstrap.bundle.min.js"></script>
+
+  <script>
+    // ── Modal de tasa BCV ───────────────────────────────────
+    const URL_ACTUALIZAR_TASA = "/configuracion/tasa/actualizar/";
+    const CSRF_TOKEN = "bCTMNkHThtunAxlr8nnGsuFxLYjkzCsovk7KxfCRrttgpYAjuscZlPdlmCMZUISU";
+
+    const inputTasa   = document.getElementById('input-nueva-tasa');
+    const btnGuardar  = document.getElementById('btn-guardar-tasa');
+    const feedback    = document.getElementById('tasa-feedback');
+
+    // Limpiar feedback al abrir el modal
+    document.getElementById('modalTasa').addEventListener('show.bs.modal', () => {
+      feedback.textContent = '';
+      feedback.className   = 'feedback mt-2';
+      inputTasa.value      = '';
+      inputTasa.focus();
+    });
+
+    // Focus al input cuando el modal termina de abrir
+    document.getElementById('modalTasa').addEventListener('shown.bs.modal', () => {
+      inputTasa.focus();
+    });
+
+    // Guardar con Enter
+    inputTasa.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter') btnGuardar.click();
+    });
+
+    btnGuardar.addEventListener('click', () => {
+      const valor = parseFloat(inputTasa.value);
+
+      if (!valor || valor <= 0) {
+        mostrarFeedback('Ingresa una tasa válida mayor a 0.', 'error');
+        return;
+      }
+
+      btnGuardar.disabled = true;
+      btnGuardar.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Guardando...';
+
+      fetch(URL_ACTUALIZAR_TASA, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-CSRFToken': CSRF_TOKEN,
+        },
+        body: JSON.stringify({ tasa: valor }),
+      })
+        .then(r => r.json())
+        .then(data => {
+          if (data.ok) {
+            // Actualizar navbar y display del modal sin recargar
+            const textoTasa = `1 = Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('tasa-navbar-texto').textContent = textoTasa;
+            document.getElementById('btn-abrir-tasa').classList.remove('sin-tasa');
+            document.getElementById('tasa-actual-display').textContent = `Bs. ${data.tasa.toFixed(2)}`;
+            document.getElementById('ultima-act').textContent = `Última actualización: ${data.ultima_actualizacion}`;
+
+            // Notificar a la página activa para que recalcule precios y carrito
+            if (typeof window.onTasaActualizada === 'function') {
+              window.onTasaActualizada(data.tasa);
+            }
+
+            // Notificar a otras pestañas (ej. el POS abierto por el cajero)
+            // para que recarguen y desbloqueen el carrito automáticamente.
+            localStorage.setItem('pos_tasa_actualizada', Date.now());
+
+            mostrarFeedback('Tasa actualizada correctamente.', 'ok');
+
+            // Cerrar el modal tras 1 segundo
+            setTimeout(() => {
+              bootstrap.Modal.getInstance(document.getElementById('modalTasa')).hide();
+            }, 1000);
+          } else {
+            mostrarFeedback(data.error || 'Error al guardar.', 'error');
+          }
+        })
+        .catch(() => mostrarFeedback('Error de conexión.', 'error'))
+        .finally(() => {
+          btnGuardar.disabled = false;
+          btnGuardar.innerHTML = '<i class="bi bi-check-lg me-1"></i>Guardar tasa';
+        });
+    });
+
+    function mostrarFeedback(msg, tipo) {
+      feedback.textContent = msg;
+      feedback.className   = `feedback mt-2 ${tipo === 'ok' ? 'text-success' : 'text-danger'}`;
+    }
+
+    // ── Apagar / cerrar la aplicación ────────────────────────
+    function apagarApp() {
+      if (!confirm('¿Cerrar la aplicación?')) return;
+      window.close();
+    }
+  </script>
+
+  
+<script>
+  let TASA              = parseFloat("500,00") || 0;
+  const IMPRIMIR_TICKET = false;
+  const TASA_VENCIDA    = false;
+  const URL_TICKET      = "/ticket/0/".replace('/0/', '/');
+  const URL_BUSCAR      = "/buscar/";
+  let carrito        = {};
+  let timerBusqueda  = null;
+  let catSeleccionada = null;
+
+  // ── Elementos del DOM ──────────────────────────────────────
+  const buscador            = document.getElementById('buscador');
+  const btnLimpiar          = document.getElementById('btn-limpiar');
+  const grid                = document.getElementById('productos-grid');
+  const estadoInicial       = document.getElementById('estado-inicial');
+  const estadoCargando      = document.getElementById('estado-cargando');
+  const estadoSinResultados = document.getElementById('estado-sin-resultados');
+  const terminoSpan         = document.getElementById('termino-busqueda');
+
+  // ── Búsqueda AJAX con debounce ─────────────────────────────
+  buscador.addEventListener('input', function () {
+    const q = this.value.trim();
+    clearTimeout(timerBusqueda);
+
+    if (q.length < 2 && !catSeleccionada) {
+      mostrarEstado('inicial');
+      grid.innerHTML = '';
+      return;
+    }
+
+    mostrarEstado('cargando');
+    timerBusqueda = setTimeout(() => buscar(q, false, catSeleccionada), 300);
+  });
+
+  // Enter: búsqueda inmediata (flujo lector de barras)
+  buscador.addEventListener('keydown', function (e) {
+    if (e.key !== 'Enter') return;
+    const q = this.value.trim();
+    if (q.length < 2 && !catSeleccionada) return;
+    clearTimeout(timerBusqueda);
+    buscar(q, q.length >= 2, catSeleccionada);
+  });
+
+  btnLimpiar.addEventListener('click', () => {
+    buscador.value = '';
+    if (catSeleccionada) {
+      mostrarEstado('cargando');
+      buscar('', false, catSeleccionada);
+    } else {
+      buscador.dispatchEvent(new Event('input'));
+    }
+    buscador.focus();
+  });
+
+  // ── Navegación de chips ────────────────────────────────────
+  function actualizarBotonesChips() {
+    const wrap = document.getElementById('cat-chips-wrap');
+    const prev = document.getElementById('chips-prev');
+    const next = document.getElementById('chips-next');
+    if (!wrap || !prev || !next) return;
+    prev.style.display = wrap.scrollLeft > 1 ? '' : 'none';
+    next.style.display = wrap.scrollLeft < wrap.scrollWidth - wrap.clientWidth - 1 ? '' : 'none';
+  }
+  function scrollChips(dir) {
+    const wrap = document.getElementById('cat-chips-wrap');
+    if (!wrap) return;
+    wrap.scrollBy({ left: dir * 180, behavior: 'smooth' });
+    setTimeout(actualizarBotonesChips, 320);
+  }
+  (function () {
+    const wrap = document.getElementById('cat-chips-wrap');
+    if (!wrap) return;
+    wrap.addEventListener('scroll', actualizarBotonesChips);
+    actualizarBotonesChips();
+  })();
+
+  // ── Filtro por categoría ───────────────────────────────────
+  function seleccionarCategoria(catId, btnEl) {
+    document.querySelectorAll('.cat-chip').forEach(b => b.classList.remove('activa'));
+    btnEl.classList.add('activa');
+    catSeleccionada = catId || null;
+
+    const q = buscador.value.trim();
+    if (catSeleccionada) {
+      mostrarEstado('cargando');
+      buscar(q.length >= 2 ? q : '', false, catSeleccionada);
+    } else {
+      if (q.length >= 2) {
+        mostrarEstado('cargando');
+        buscar(q, false, null);
+      } else {
+        mostrarEstado('inicial');
+        grid.innerHTML = '';
+      }
+    }
+    buscador.focus();
+  }
+
+  function buscar(q, agregarDirecto = false, catId = null) {
+    const params = new URLSearchParams();
+    if (q)     params.set('q',   q);
+    if (catId) params.set('cat', catId);
+
+    fetch(`${URL_BUSCAR}?${params}`)
+      .then(r => r.json())
+      .then(data => {
+        const productos = data.productos;
+        grid.innerHTML = '';
+
+        if (productos.length === 0) {
+          terminoSpan.textContent = q || 'esta categoría';
+          mostrarEstado('sin-resultados');
+          return;
+        }
+
+        mostrarEstado('grid');
+        productos.forEach(p => grid.appendChild(crearTarjeta(p)));
+
+        // Lector de barras: si hay exactamente 1 resultado, agrégalo y limpia
+        if (agregarDirecto && productos.length === 1) {
+          const p = productos[0];
+          if (p.vendido_por_peso) {
+            abrirDialogoKg(p.id, p.nombre, p.precio_usd, p.stock_actual);
+          } else {
+            agregarAlCarrito(p.id, p.nombre, p.precio_usd, false, 1, p.stock_actual);
+          }
+          buscador.value = '';
+          if (catSeleccionada) {
+            buscar('', false, catSeleccionada);
+          } else {
+            buscador.dispatchEvent(new Event('input'));
+          }
+        }
+      })
+      .catch(() => mostrarEstado('inicial'));
+  }
+
+  function crearTarjeta(p) {
+    const col = document.createElement('div');
+    col.className = 'col';
+
+    const imgHtml = p.imagen
+      ? `<img src="${p.imagen}" alt="${p.nombre}">`
+      : `<i class="bi bi-box-seam placeholder-icon"></i>`;
+
+    const bsHtml = p.precio_bs
+      ? `Bs. ${p.precio_bs.toFixed(2)}`
+      : `Bs. —`;
+
+    const stockIcono = p.stock_bajo ? 'bi-exclamation-triangle-fill' : 'bi-box-seam';
+    const stockClase = p.stock_bajo ? 'bajo' : '';
+    const unidad    = p.vendido_por_peso ? 'kg' : 'ud';
+    const stockText = p.vendido_por_peso
+      ? `${parseFloat(p.stock_actual.toFixed(3)).toString().replace('.', ',')} kg`
+      : p.stock_actual;
+    const stockHtml = `<div class="stock-info ${stockClase}">
+      <i class="bi ${stockIcono}"></i> Stock: ${stockText}
+    </div>`;
+    const precioLabel = p.vendido_por_peso
+      ? `Bs. ${p.precio_bs ? p.precio_bs.toFixed(2) : '—'}/kg`
+      : bsHtml;
+    const precioUsdLabel = p.vendido_por_peso
+      ? `$ ${p.precio_usd.toFixed(2)}/kg`
+      : `$ ${p.precio_usd.toFixed(2)}`;
+
+    col.innerHTML = `
+      <div class="card producto-card"
+           data-id="${p.id}"
+           data-nombre-producto="${p.nombre}"
+           data-precio="${p.precio_usd}"
+           data-stock="${p.stock_actual}"
+           data-por-peso="${p.vendido_por_peso ? 'true' : 'false'}">
+        <div class="card-img-wrap">${imgHtml}</div>
+        <div class="card-body">
+          <div class="nombre">${p.nombre}</div>
+          <div class="precio-bs">${precioLabel}</div>
+          <div class="precio-usd">${precioUsdLabel}</div>
+          ${stockHtml}
+        </div>
+      </div>`;
+    return col;
+  }
+
+  function mostrarEstado(estado) {
+    estadoInicial.style.display       = estado === 'inicial'       ? 'flex' : 'none';
+    estadoCargando.style.display      = estado === 'cargando'      ? 'flex' : 'none';
+    estadoSinResultados.style.display = estado === 'sin-resultados'? 'flex' : 'none';
+    grid.style.display                = estado === 'grid'          ? ''     : 'none';
+  }
+
+  // ── Click en tarjeta (delegado en el grid) ─────────────────
+  grid.addEventListener('click', function (e) {
+    const card = e.target.closest('.producto-card');
+    if (!card) return;
+    const stock = parseFloat(card.dataset.stock);
+    if (card.dataset.porPeso === 'true') {
+      abrirDialogoKg(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), stock);
+    } else {
+      agregarAlCarrito(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), false, 1, stock);
+    }
+  });
+
+  // ── Diálogo de cantidad en kg ───────────────────────────────
+  function abrirDialogoKg(id, nombre, precioUsd, stock = null) {
+    document.getElementById('kg-dialog-nombre').textContent = nombre;
+    document.getElementById('kg-dialog-precio').textContent =
+      `$ ${precioUsd.toFixed(2)}/kg`;
+    document.getElementById('kg-input').value = carrito[id]
+      ? carrito[id].cantidad.toFixed(3)
+      : '';
+
+    _kgPendiente = { id, nombre, precioUsd, stock: stock ?? carrito[id]?.stock ?? null };
+    new bootstrap.Modal(document.getElementById('modalKg')).show();
+    setTimeout(() => document.getElementById('kg-input').focus(), 300);
+  }
+
+  let _kgPendiente = null;
+
+  document.getElementById('btn-kg-ok').addEventListener('click', confirmarKg);
+  document.getElementById('kg-input').addEventListener('keydown', e => {
+    if (['e','E','+','-'].includes(e.key)) { e.preventDefault(); return; }
+    if (e.key === 'Enter') confirmarKg();
+  });
+  document.getElementById('kg-input').addEventListener('paste', e => {
+    e.preventDefault();
+    const txt = (e.clipboardData || window.clipboardData).getData('text')
+      .replace(/[^\d.]/g, '').replace(',', '.');
+    e.target.value = txt;
+  });
+
+  function confirmarKg() {
+    const val = parseFloat(document.getElementById('kg-input').value);
+    if (!val || isNaN(val) || val <= 0) {
+      document.getElementById('kg-feedback').textContent = 'Ingresa una cantidad mayor a 0.';
+      return;
+    }
+    if (val > 9999) {
+      document.getElementById('kg-feedback').textContent = 'La cantidad no puede superar 9.999 kg.';
+      return;
+    }
+    const { id, nombre, precioUsd, stock } = _kgPendiente;
+    bootstrap.Modal.getInstance(document.getElementById('modalKg')).hide();
+    agregarAlCarrito(id, nombre, precioUsd, true, parseFloat(val.toFixed(3)), stock);
+  }
+
+  // ── Lógica del carrito ─────────────────────────────────────
+  function agregarAlCarrito(id, nombre, precioUsd, porPeso, cantidad, stock = null) {
+    if (carrito[id] && !porPeso) {
+      carrito[id].cantidad += cantidad;
+    } else {
+      carrito[id] = { nombre, precio_usd: precioUsd, cantidad, por_peso: porPeso, stock };
+    }
+    renderCarrito();
+    buscador.focus();
+  }
+
+  function cambiarCantidad(id, delta) {
+    if (!carrito[id]) return;
+    const paso = carrito[id].por_peso ? 0.1 : 1;
+    carrito[id].cantidad = parseFloat((carrito[id].cantidad + delta * paso).toFixed(3));
+    if (carrito[id].cantidad <= 0) delete carrito[id];
+    renderCarrito();
+  }
+
+  function editarCantidadKg(id) {
+    if (!carrito[id]) return;
+    abrirDialogoKg(id, carrito[id].nombre, carrito[id].precio_usd, carrito[id].stock);
+  }
+
+  function editarCantidadUnidad(id) {
+    if (!carrito[id]) return;
+    const contenedor = document.getElementById('carrito-items');
+    const el   = contenedor.querySelector(`.carrito-item[data-id="${id}"]`);
+    if (!el) return;
+    const span = el.querySelector('.qty-num-unit');
+    if (!span) return;
+
+    const inp = document.createElement('input');
+    inp.type  = 'number';
+    inp.min   = '1';
+    inp.max   = '9999';
+    inp.step  = '1';
+    inp.value = carrito[id].cantidad;
+    inp.style.cssText = 'width:52px;text-align:center;font-size:.9rem;font-weight:700;border:1px solid #2d6a4f;border-radius:4px;padding:1px 4px;';
+
+    function confirmar() {
+      const val = parseInt(inp.value);
+      if (!isNaN(val) && val >= 1 && val <= 9999) carrito[id].cantidad = val;
+      renderCarrito();
+    }
+
+    inp.addEventListener('keydown', e => {
+      if (['e','E','+','-','.'].includes(e.key)) { e.preventDefault(); return; }
+      if (e.key === 'Enter')  { inp.removeEventListener('blur', confirmar); confirmar(); return; }
+      if (e.key === 'Escape') { inp.removeEventListener('blur', confirmar); renderCarrito(); return; }
+    });
+    inp.addEventListener('blur', confirmar);
+
+    span.replaceWith(inp);
+    inp.focus();
+    inp.select();
+  }
+
+  function vaciarCarrito() {
+    carrito = {};
+    renderCarrito();
+  }
+
+  function renderCarrito() {
+    const contenedor = document.getElementById('carrito-items');
+    const vacio      = document.getElementById('carrito-vacio');
+    const countBadge = document.getElementById('carrito-count');
+    const btnCobrar  = document.getElementById('btn-cobrar');
+    const ids        = Object.keys(carrito);
+
+    contenedor.querySelectorAll('.carrito-item').forEach(el => el.remove());
+
+    if (ids.length === 0) {
+      vacio.style.display    = 'flex';
+      countBadge.textContent = '0';
+      btnCobrar.disabled     = true;
+      actualizarTotales(0);
+      return;
+    }
+
+    vacio.style.display = 'none';
+
+    let totalUsd = 0, totalItems = 0, hayStockError = false;
+
+    ids.forEach(id => {
+      const item        = carrito[id];
+      const subtotalUsd = item.precio_usd * item.cantidad;
+      totalUsd   += subtotalUsd;
+      totalItems += item.por_peso ? 1 : item.cantidad;
+
+      const sinStock = item.stock !== null && item.stock !== undefined && item.cantidad > item.stock;
+      if (sinStock) hayStockError = true;
+
+      const el = document.createElement('div');
+      el.className  = 'carrito-item' + (sinStock ? ' stock-error' : '');
+      el.dataset.id = id;
+      const precioLabel = item.por_peso
+        ? `$ ${item.precio_usd.toFixed(2)}/kg`
+        : `$ ${item.precio_usd.toFixed(2)} c/u`;
+      const kgDisplay = parseFloat(item.cantidad.toFixed(3)).toString().replace('.', ',');
+      const stockDisp = item.stock !== null && item.stock !== undefined
+        ? (item.por_peso
+            ? parseFloat(item.stock.toFixed(3)).toString().replace('.', ',') + ' kg'
+            : item.stock)
+        : null;
+      const alertaHtml = sinStock
+        ? `<div class="stock-alerta"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock insuficiente — disponible: ${stockDisp}</div>`
+        : '';
+      const qtyHtml = item.por_peso
+        ? `<div class="qty-control">
+             <button onclick="cambiarCantidad(${id}, -1)">−</button>
+             <span class="qty-num" style="cursor:pointer; background:#f0fdf4; border-radius:6px; padding:1px 5px;"
+                   onclick="editarCantidadKg(${id})" title="Clic para editar">
+               ${kgDisplay}<small style="font-weight:400; color:#6c757d; font-size:.75em; margin-left:2px;">kg</small>
+             </span>
+             <button onclick="cambiarCantidad(${id}, +1)">+</button>
+           </div>`
+        : `<div class="qty-control">
+             <button onclick="cambiarCantidad(${id}, -1)">−</button>
+             <span class="qty-num qty-num-unit" onclick="editarCantidadUnidad('${id}')" title="Clic para editar">${item.cantidad}</span>
+             <button onclick="cambiarCantidad(${id}, +1)">+</button>
+           </div>`;
+      el.innerHTML  = `
+        <div class="item-info">
+          <div class="item-nombre" title="${item.nombre}">${truncar(item.nombre)}</div>
+          <div class="item-precio">${precioLabel}</div>
+          ${alertaHtml}
+        </div>
+        ${qtyHtml}
+        <div class="item-subtotal">$ ${subtotalUsd.toFixed(2)}</div>`;
+      contenedor.appendChild(el);
+    });
+
+    countBadge.textContent = totalItems;
+    btnCobrar.disabled = TASA_VENCIDA || hayStockError;
+    actualizarTotales(totalUsd);
+  }
+
+  function truncar(texto, max = 40) {
+    return texto.length > max ? texto.slice(0, max) + '…' : texto;
+  }
+
+  function actualizarTotales(totalUsd) {
+    const totalBs = totalUsd * TASA;
+    document.getElementById('total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
+    document.getElementById('total-bs').textContent  = `Bs. ${formatBs(totalBs)}`;
+  }
+
+  function formatBs(n) {
+    return n.toLocaleString('es-VE', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+
+  // ── Modal de cobro ────────────────────────────────────────
+  const URL_PROCESAR   = "/procesar/";
+  const CSRF_VENTA     = "bCTMNkHThtunAxlr8nnGsuFxLYjkzCsovk7KxfCRrttgpYAjuscZlPdlmCMZUISU";
+  const modalCobroEl   = document.getElementById('modalCobro');
+  const modalCobro     = new bootstrap.Modal(modalCobroEl);
+  const inputRecibido  = document.getElementById('monto-recibido');
+
+  function abrirModalCobro() {
+    // Sincronizar totales
+    const totalUsd = parseFloat(document.getElementById('total-usd').textContent.replace('$','').trim());
+    const totalBs  = document.getElementById('total-bs').textContent;
+    document.getElementById('cobro-total-usd').textContent = `$ ${totalUsd.toFixed(2)}`;
+    document.getElementById('cobro-total-bs').textContent  = totalBs;
+
+    // Limpiar estado anterior
+    document.querySelectorAll('input[name="metodo"]').forEach(r => r.checked = false);
+    document.getElementById('bloque-vuelto').style.display = 'none';
+    document.getElementById('cobro-feedback').textContent  = '';
+    document.getElementById('cobro-notas').value           = '';
+    inputRecibido.value = '';
+    document.getElementById('vuelto-display').textContent  = '$ 0.00';
+
+    modalCobro.show();
+  }
+
+  // Mostrar/ocultar bloque de vuelto según método
+  document.querySelectorAll('input[name="metodo"]').forEach(radio => {
+    radio.addEventListener('change', function () {
+      const esEfectivo = ['EFECTIVO_USD', 'EFECTIVO_BS'].includes(this.value);
+      const bloqueVuelto = document.getElementById('bloque-vuelto');
+      const labelRecibido = document.getElementById('label-monto-recibido');
+
+      bloqueVuelto.style.display = esEfectivo ? 'block' : 'none';
+
+      if (this.value === 'EFECTIVO_BS') {
+        labelRecibido.textContent = 'Monto recibido (Bs.)';
+        calcularVuelto('BS');
+      } else {
+        labelRecibido.textContent = 'Monto recibido (USD)';
+        calcularVuelto('USD');
+      }
+
+      if (esEfectivo) inputRecibido.focus();
+    });
+  });
+
+  // Calcular vuelto en tiempo real
+  inputRecibido.addEventListener('input', function () {
+    const metodo = document.querySelector('input[name="metodo"]:checked')?.value;
+    calcularVuelto(metodo === 'EFECTIVO_BS' ? 'BS' : 'USD');
+  });
+
+  function calcularVuelto(moneda) {
+    const totalUsd = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+    const recibido = parseFloat(inputRecibido.value) || 0;
+    const el       = document.getElementById('vuelto-display');
+
+    if (moneda === 'BS') {
+      const totalBsNum = totalUsd * TASA;
+      const vuelto     = recibido - totalBsNum;
+      el.textContent   = `Bs. ${formatBs(Math.max(vuelto, 0))}`;
+      el.style.color   = vuelto >= 0 ? '#2d6a4f' : '#dc3545';
+    } else {
+      const vuelto   = recibido - totalUsd;
+      el.textContent = `$ ${Math.max(vuelto, 0).toFixed(2)}`;
+      el.style.color = vuelto >= 0 ? '#2d6a4f' : '#dc3545';
+    }
+  }
+
+  // Confirmar venta
+  document.getElementById('btn-confirmar-cobro').addEventListener('click', function () {
+    const metodo   = document.querySelector('input[name="metodo"]:checked')?.value;
+    const feedback = document.getElementById('cobro-feedback');
+
+    if (!metodo) {
+      feedback.textContent = 'Selecciona un método de pago.';
+      return;
+    }
+
+    // Validación de monto recibido para pagos en efectivo
+    if (['EFECTIVO_USD', 'EFECTIVO_BS'].includes(metodo)) {
+      const totalUsd  = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+      const recibido  = parseFloat(inputRecibido.value) || 0;
+
+      if (!inputRecibido.value.trim()) {
+        feedback.textContent = 'Ingresa el monto recibido.';
+        inputRecibido.focus();
+        return;
+      }
+
+      if (isNaN(recibido) || recibido < 0 || recibido > 9_999_999) {
+        feedback.textContent = 'Monto recibido inválido.';
+        inputRecibido.focus();
+        return;
+      }
+
+      if (metodo === 'EFECTIVO_USD' && recibido < totalUsd) {
+        feedback.textContent = `Monto insuficiente. Faltan $ ${(totalUsd - recibido).toFixed(2)}.`;
+        inputRecibido.focus();
+        return;
+      }
+
+      if (metodo === 'EFECTIVO_BS') {
+        const totalBs = totalUsd * TASA;
+        if (recibido < totalBs) {
+          feedback.textContent = `Monto insuficiente. Faltan Bs. ${formatBs(totalBs - recibido)}.`;
+          inputRecibido.focus();
+          return;
+        }
+      }
+    }
+
+    const esEfectivo = ['EFECTIVO_USD', 'EFECTIVO_BS'].includes(metodo);
+    const recibidoVal = esEfectivo ? (parseFloat(inputRecibido.value) || 0) : null;
+
+    // Calcular vuelto para guardarlo en la BD
+    let vueltoVal = null;
+    if (esEfectivo) {
+      const totalUsdNum = parseFloat(document.getElementById('cobro-total-usd').textContent.replace('$','').trim()) || 0;
+      if (metodo === 'EFECTIVO_BS') {
+        vueltoVal = recibidoVal - (totalUsdNum * TASA);
+      } else {
+        vueltoVal = recibidoVal - totalUsdNum;
+      }
+      vueltoVal = Math.max(parseFloat(vueltoVal.toFixed(2)), 0);
+    }
+
+    const payload = {
+      carrito:        Object.entries(carrito).map(([id, item]) => ({ id, cantidad: item.cantidad })),
+      metodo_pago:    metodo,
+      notas:          document.getElementById('cobro-notas').value.trim(),
+      monto_recibido: recibidoVal,
+      vuelto:         vueltoVal,
+    };
+
+    this.disabled    = true;
+    this.innerHTML   = '<span class="spinner-border spinner-border-sm me-2"></span>Procesando...';
+    feedback.textContent = '';
+
+    fetch(URL_PROCESAR, {
+      method:  'POST',
+      headers: { 'Content-Type': 'application/json', 'X-CSRFToken': CSRF_VENTA },
+      body:    JSON.stringify(payload),
+    })
+      .then(r => r.json())
+      .then(data => {
+        if (data.ok) {
+          modalCobro.hide();
+          vaciarCarrito();
+          mostrarConfirmacion(data);
+        } else {
+          feedback.textContent = data.error || 'Error al procesar la venta.';
+        }
+      })
+      .catch(() => { feedback.textContent = 'Error de conexión.'; })
+      .finally(() => {
+        this.disabled  = false;
+        this.innerHTML = '<i class="bi bi-check-circle me-2"></i>Confirmar venta';
+      });
+  });
+
+  const modalPostCobroEl = document.getElementById('modalPostCobro');
+  const modalPostCobro   = new bootstrap.Modal(modalPostCobroEl);
+
+  function mostrarConfirmacion(data) {
+    document.getElementById('pc-venta-id').textContent  = `Venta #${data.venta_id}`;
+    document.getElementById('pc-total-usd').textContent = `$ ${data.total_usd.toFixed(2)}`;
+    document.getElementById('pc-total-bs').textContent  = `Bs. ${data.total_bs.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g, ',')}`;
+
+    const btnTicket    = document.getElementById('pc-btn-ticket');
+    const ticketStatus = document.getElementById('pc-ticket-status');
+
+    if (IMPRIMIR_TICKET) {
+      if (data.ticket_impreso) {
+        ticketStatus.style.display = '';
+        ticketStatus.style.color   = '#2d6a4f';
+        ticketStatus.innerHTML     = '<i class="bi bi-check-circle-fill me-1"></i>Ticket impreso correctamente.';
+        btnTicket.style.display    = 'none';
+      } else {
+        ticketStatus.style.display = '';
+        ticketStatus.style.color   = '#dc3545';
+        ticketStatus.innerHTML     = `<i class="bi bi-exclamation-triangle-fill me-1"></i>No se pudo imprimir: ${data.ticket_error || 'error desconocido'}.`;
+        btnTicket.style.display    = '';
+        const w    = 460, h = 680;
+        const left = Math.round((screen.width  - w) / 2);
+        const top  = Math.round((screen.height - h) / 2);
+        btnTicket.onclick = () => window.open(
+          `${URL_TICKET}${data.venta_id}/`, 'ticket',
+          `width=${w},height=${h},left=${left},top=${top},scrollbars=yes,toolbar=no,menubar=no,location=no`
+        );
+      }
+    } else {
+      ticketStatus.style.display = 'none';
+      btnTicket.style.display    = 'none';
+    }
+
+    modalPostCobro.show();
+  }
+
+  document.getElementById('pc-btn-nueva').addEventListener('click', () => {
+    location.reload();
+  });
+
+  // ── Hook global: llamado desde base.html al actualizar tasa ──
+  window.onTasaActualizada = function(nuevaTasa) {
+    TASA = nuevaTasa;
+
+    // Recalcular Bs en todas las tarjetas visibles del grid
+    document.querySelectorAll('.producto-card').forEach(card => {
+      const precioUsd = parseFloat(card.dataset.precio);
+      const bsEl      = card.querySelector('.precio-bs');
+      if (bsEl && precioUsd) {
+        const sufijo = card.dataset.porPeso === 'true' ? '/kg' : '';
+        bsEl.textContent = `Bs. ${(precioUsd * TASA).toFixed(2)}${sufijo}`;
+      }
+    });
+
+    // Recalcular totales del carrito con la nueva tasa
+    renderCarrito();
+  };
+
+  // Estado inicial al cargar
+  mostrarEstado('inicial');
+
+  // ── Polling de tasa BCV (cada 60 s) ───────────────────────
+  const URL_TASA_ESTADO = "/tasa-estado/";
+  let tasaVencida = TASA_VENCIDA;
+
+  function aplicarEstadoTasa(vencida, tasa, ultimaAct) {
+    if (vencida === tasaVencida && (!tasa || tasa === TASA)) return; // sin cambios
+
+    tasaVencida = vencida;
+    if (tasa) {
+      TASA = tasa;
+      window.onTasaActualizada(tasa); // recalcula tarjetas y carrito
+    }
+
+    const alerta    = document.getElementById('alerta-tasa-vencida');
+    const btnCobrar = document.getElementById('btn-cobrar');
+    const badgeTasa = document.getElementById('badge-tasa-cajero');
+
+    if (alerta) alerta.style.display = vencida ? '' : 'none';
+
+    if (btnCobrar) {
+      if (vencida) {
+        btnCobrar.disabled = true;
+        btnCobrar.innerHTML = '<i class="bi bi-lock me-2"></i>Tasa vencida';
+      } else {
+        const hayItems = Object.keys(carrito).length > 0;
+        btnCobrar.disabled  = !hayItems;
+        btnCobrar.innerHTML = '<i class="bi bi-cash-coin me-2"></i>Cobrar';
+      }
+    }
+
+    if (badgeTasa) {
+      if (vencida) {
+        badgeTasa.className = 'badge bg-danger-subtle text-danger border border-danger-subtle px-2 py-1';
+        badgeTasa.innerHTML = '<i class="bi bi-exclamation-triangle-fill me-1"></i>Tasa vencida';
+      } else if (tasa) {
+        badgeTasa.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+        badgeTasa.innerHTML = `<i class="bi bi-currency-dollar me-1"></i>Tasa BCV: Bs. ${tasa.toFixed(2)}`;
+      }
+      const spanUltAct = document.getElementById('badge-ultima-act');
+      if (spanUltAct && ultimaAct) spanUltAct.textContent = `Actualizada: ${ultimaAct}`;
+    }
+  }
+
+  setInterval(() => {
+    fetch(URL_TASA_ESTADO)
+      .then(r => r.json())
+      .then(d => aplicarEstadoTasa(d.tasa_vencida, d.tasa, d.ultima_actualizacion))
+      .catch(() => {}); // silencioso si falla la red
+  }, 60_000);
+
+  // Recarga automática cuando el admin actualiza la tasa desde configuración
+  // (funciona entre pestañas del mismo origen via Storage Event API)
+  window.addEventListener('storage', e => {
+    if (e.key === 'pos_tasa_actualizada') location.reload();
+  });
+
+  // ── Lector de código de barras global ─────────────────────
+  // El escáner escribe muy rápido (~10-30ms entre teclas). Si detectamos
+  // una ráfaga rápida de ≥6 chars terminada en Enter, lo tratamos como
+  // un escaneo aunque el buscador no tenga el foco.
+  (function () {
+    let buf = '';
+    let t0  = 0;
+    const VELOCIDAD_MS = 50;
+    const MIN_CHARS    = 6;
+
+    document.addEventListener('keydown', function (e) {
+      // Si hay algún modal abierto, no interferir
+      if (document.querySelector('.modal.show')) { buf = ''; return; }
+
+      const activo = document.activeElement;
+
+      // Si el foco está en un input crítico que no es el buscador, ignorar
+      const inputsCriticos = ['monto-recibido'];
+      if (activo && inputsCriticos.includes(activo.id)) { buf = ''; return; }
+
+      // Si el foco está en el buscador, el listener propio del buscador ya maneja Enter.
+      // Sólo acumulamos el buffer para detectar velocidad de escáner.
+      if (activo && activo.id === 'buscador') {
+        const ahora = Date.now();
+        if (e.key === 'Enter') { buf = ''; return; }
+        if (buf.length > 0 && ahora - t0 > VELOCIDAD_MS) buf = '';
+        if (e.key.length === 1) { buf += e.key; t0 = ahora; }
+        return;
+      }
+
+      const ahora = Date.now();
+
+      if (e.key === 'Enter') {
+        if (buf.length >= MIN_CHARS) {
+          // Escáner detectado: enrutar al buscador y buscar de inmediato
+          e.preventDefault();
+          buscador.value = buf;
+          buscador.focus();
+          clearTimeout(timerBusqueda);
+          buscar(buf, true, catSeleccionada);
+        }
+        buf = ''; return;
+      }
+
+      // Resetear buffer si la pausa fue demasiado larga (escritura humana)
+      if (buf.length > 0 && ahora - t0 > VELOCIDAD_MS) buf = '';
+
+      if (e.key.length === 1) { buf += e.key; t0 = ahora; }
+    });
+  })();
+</script>
+
+</body>
+</html>

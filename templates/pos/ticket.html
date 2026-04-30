@@ -1,4 +1,4 @@
-<!DOCTYPE html>
+{% load pos_extras %}<!DOCTYPE html>
 <html lang="es">
 <head>
   <meta charset="UTF-8">
@@ -199,8 +199,8 @@
       <tr>
         <td class="item-nombre">{{ d.nombre }}</td>
         <td class="num">{{ d.cantidad }}</td>
-        <td class="num">{{ d.precio_bs|floatformat:2 }}</td>
-        <td class="num">{{ d.subtotal_bs|floatformat:2 }}</td>
+        <td class="num">{{ d.precio_bs|formato_bs }}</td>
+        <td class="num">{{ d.subtotal_bs|formato_bs }}</td>
       </tr>
       {% endfor %}
     </tbody>
@@ -211,7 +211,7 @@
   <!-- Total principal -->
   <div class="total-wrap">
     <div class="small muted">TOTAL A PAGAR</div>
-    <div class="total-num">Bs. {{ venta.total_bs|floatformat:2 }}</div>
+    <div class="total-num">Bs. {{ venta.total_bs|formato_bs }}</div>
   </div>
 
   <!-- Desglose fiscal SENIAT -->
@@ -220,17 +220,17 @@
     {% if venta.monto_exento_bs %}
     <tr>
       <td class="lbl">Monto Exento</td>
-      <td class="val">Bs. {{ venta.monto_exento_bs|floatformat:2 }}</td>
+      <td class="val">Bs. {{ venta.monto_exento_bs|formato_bs }}</td>
     </tr>
     {% endif %}
     {% if venta.base_imponible_bs %}
     <tr>
       <td class="lbl">Base Imponible</td>
-      <td class="val">Bs. {{ venta.base_imponible_bs|floatformat:2 }}</td>
+      <td class="val">Bs. {{ venta.base_imponible_bs|formato_bs }}</td>
     </tr>
     <tr>
       <td class="lbl">Monto IVA</td>
-      <td class="val">Bs. {{ venta.iva_bs|floatformat:2 }}</td>
+      <td class="val">Bs. {{ venta.iva_bs|formato_bs }}</td>
     </tr>
     {% endif %}
   </table>
@@ -245,11 +245,11 @@
     {% if monto_recibido_bs is not None %}
     <tr>
       <td class="lbl">Monto recibido</td>
-      <td class="val">Bs. {{ monto_recibido_bs|floatformat:2 }}</td>
+      <td class="val">Bs. {{ monto_recibido_bs|formato_bs }}</td>
     </tr>
     <tr>
       <td class="lbl">Vuelto</td>
-      <td class="val">Bs. {{ vuelto_bs|floatformat:2 }}</td>
+      <td class="val">Bs. {{ vuelto_bs|formato_bs }}</td>
     </tr>
     {% endif %}
   </table>

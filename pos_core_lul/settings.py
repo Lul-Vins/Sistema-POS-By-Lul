@@ -113,6 +113,35 @@ MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
 
+# ── Logging a archivo (errores en producción) ─────────────────────
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'formatters': {
+        'detallado': {
+            'format': '{asctime} {levelname} {module} {message}',
+            'style': '{',
+        },
+    },
+    'handlers': {
+        'archivo': {
+            'level': 'ERROR',
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': BASE_DIR / 'logs' / 'errores.log',
+            'maxBytes': 1024 * 1024,  # 1 MB
+            'backupCount': 3,
+            'formatter': 'detallado',
+            'encoding': 'utf-8',
+        },
+    },
+    'root': {
+        'handlers': ['archivo'],
+        'level': 'ERROR',
+    },
+}
+
+
 # ── Clave primaria por defecto ────────────────────────────────────
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
