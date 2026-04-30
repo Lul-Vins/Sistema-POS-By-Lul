@@ -22,6 +22,13 @@ class CierreCaja(models.Model):
     pago_movil_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
     mixto_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
 
+    # ── Abonos de fiados del día ──
+    abonos_usd_total = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+    abonos_bs_total  = models.DecimalField(max_digits=14, decimal_places=2, default=0)
+
+    # ── Gran total del día (ventas USD + abonos USD equiv) ──
+    gran_total_usd = models.DecimalField(max_digits=10, decimal_places=2, default=0)
+
     # Notas opcionales
     notas = models.TextField(blank=True)
 
@@ -30,6 +37,10 @@ class CierreCaja(models.Model):
         verbose_name_plural = 'Cierres de caja'
         ordering = ['-fecha_cierre']
         unique_together = [['fecha']]  # Solo un cierre por día
+
+    @property
+    def total_dia_usd(self):
+        return self.gran_total_usd
 
     def __str__(self):
         return f'Cierre {self.fecha:%d/%m/%Y} — USD: ${self.efectivo_usd_real}'

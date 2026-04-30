@@ -1,4 +1,5 @@
 {% extends "base.html" %}
+{% load pos_extras %}
 
 {% block titulo %}{{ cliente.nombre }}{% endblock %}
 {% block nav_fiados %}active{% endblock %}
@@ -202,7 +203,7 @@
                 <tbody>
                   {% for d in f.detalles.all %}
                   <tr>
-                    <td class="ps-0 text-muted py-1" style="width:1.8rem; white-space:nowrap;">{{ d.cantidad }}×</td>
+                    <td class="ps-0 text-muted py-1" style="white-space:nowrap;">{{ d.cantidad|formato_cantidad:d.producto.vendido_por_peso }} ×</td>
                     <td class="py-1">{{ d.producto.nombre }}</td>
                     <td class="text-end py-1 text-muted pe-0">$ {{ d.subtotal_usd|floatformat:2 }}</td>
                   </tr>
@@ -339,6 +340,20 @@
                  placeholder="Escribe el nombre..." autocomplete="off">
           <div id="venta-resultados" class="mt-1 border rounded bg-white"
                style="display:none; max-height:190px; overflow-y:auto;"></div>
+          <!-- Entrada inline para productos por kg -->
+          <div id="kg-inline" style="display:none; background:#f0fdf4; border-radius:8px; padding:.7rem 1rem; margin-top:.5rem; border:1px solid #b7e4c7;">
+            <div class="fw-semibold mb-2" id="kg-inline-nombre" style="font-size:.9rem; color:#1b4332;"></div>
+            <div class="d-flex gap-2 align-items-center flex-wrap">
+              <input type="number" id="kg-inline-input" class="form-control form-control-sm"
+                     style="width:130px;" placeholder="0,000" min="0.001" step="0.001" max="9999">
+              <span class="text-muted" style="font-size:.85rem;">kg</span>
+              <button type="button" class="btn btn-success btn-sm fw-semibold px-3" id="btn-kg-inline-ok">
+                <i class="bi bi-check-lg me-1"></i>Agregar
+              </button>
+              <button type="button" class="btn btn-link btn-sm text-muted p-0" id="btn-kg-inline-cancelar">Cancelar</button>
+            </div>
+            <div id="kg-inline-feedback" class="text-danger mt-1" style="font-size:.82rem; min-height:.9rem;"></div>
+          </div>
         </div>
 
         <div id="carrito-section" style="display:none;">
@@ -392,18 +407,6 @@
         </div>
 
         <div class="mb-3">
-          <label class="form-label fw-semibold">
-            Monto a abonar (Bs) <span class="text-danger">*</span>
-          </label>
-          <input type="number" id="pago-monto" class="form-control form-control-lg fw-bold"
-                 placeholder="0.00" min="0.01" step="0.01" max="99999999">
-          <div class="equiv-preview" id="pago-equiv">
-            <i class="bi bi-arrow-right me-1"></i>
-            Abona <strong id="pago-equiv-usd"></strong> USD al cambio de hoy
-          </div>
-        </div>
-
-        <div class="mb-3">
           <label class="form-label fw-semibold">Método de pago <span class="text-danger">*</span></label>
           <select id="pago-metodo" class="form-select">
             <option value="">Seleccionar...</option>
@@ -411,6 +414,21 @@
             <option value="{{ key }}">{{ label }}</option>
             {% endfor %}
           </select>
+        </div>
+
+        <div class="mb-3">
+          <label class="form-label fw-semibold" id="pago-monto-label">
+            Monto a abonar (Bs) <span class="text-danger">*</span>
+          </label>
+          <div class="input-group">
+            <span class="input-group-text fw-bold text-muted" id="pago-monto-prefix">Bs.</span>
+            <input type="number" id="pago-monto" class="form-control form-control-lg fw-bold"
+                   placeholder="0.00" min="0.01" step="0.01" max="99999999">
+          </div>
+          <div class="equiv-preview" id="pago-equiv">
+            <i class="bi bi-arrow-right me-1"></i>
+            <span id="pago-equiv-txt"></span>
+          </div>
         </div>
 
         <div class="mb-2">
@@ -496,13 +514,16 @@
 
   // ══ NUEVA COMPRA FIADA ═════════════════════════════════════════
   let carrito = [];
+  let _kgPendiente = null;
 
   function abrirModalVenta() {
     carrito = [];
-    document.getElementById('venta-buscar').value     = '';
-    document.getElementById('venta-notas').value      = '';
-    document.getElementById('venta-feedback').textContent = '';
+    _kgPendiente = null;
+    document.getElementById('venta-buscar').value             = '';
+    document.getElementById('venta-notas').value              = '';
+    document.getElementById('venta-feedback').textContent     = '';
     document.getElementById('venta-resultados').style.display = 'none';
+    document.getElementById('kg-inline').style.display        = 'none';
     renderCarrito();
     modalVenta.show();
     setTimeout(() => document.getElementById('venta-buscar').focus(), 300);
@@ -525,11 +546,15 @@
           cont.innerHTML = '<div class="p-2 text-muted" style="font-size:.85rem;">Sin resultados.</div>';
         } else {
           cont.innerHTML = data.productos.map(p => {
+            const sufijo     = p.vendido_por_peso ? '/kg' : '';
+            const stockFmt   = p.vendido_por_peso
+              ? parseFloat(p.stock_actual.toFixed(3)).toString().replace('.', ',') + ' kg'
+              : p.stock_actual;
             const bsStr = TASA_HOY
-              ? `Bs. ${(p.precio_usd * TASA_HOY).toFixed(2)} <span class="text-muted" style="font-size:.78rem;">· $${p.precio_usd.toFixed(2)}</span>`
-              : `$${p.precio_usd.toFixed(2)}`;
-            return `<div class="producto-resultado" onclick='agregarAlCarrito(${JSON.stringify(p)})'>
-              <span>${p.nombre} <span class="text-muted" style="font-size:.78rem;">stock: ${p.stock_actual}</span></span>
+              ? `Bs. ${(p.precio_usd * TASA_HOY).toFixed(2)}${sufijo} <span class="text-muted" style="font-size:.78rem;">· $${p.precio_usd.toFixed(2)}${sufijo}</span>`
+              : `$${p.precio_usd.toFixed(2)}${sufijo}`;
+            return `<div class="producto-resultado" onclick='seleccionarProducto(${JSON.stringify(p)})'>
+              <span>${p.nombre} <span class="text-muted" style="font-size:.78rem;">stock: ${stockFmt}</span></span>
               <span class="fw-semibold text-success">${bsStr}</span>
             </div>`;
           }).join('');
@@ -539,22 +564,118 @@
       .catch(() => {});
   }
 
-  function agregarAlCarrito(p) {
+  function seleccionarProducto(p) {
     document.getElementById('venta-resultados').style.display = 'none';
     document.getElementById('venta-buscar').value = '';
+
+    if (p.vendido_por_peso) {
+      _kgPendiente = p;
+      const existente = carrito.find(i => i.id === p.id);
+      document.getElementById('kg-inline-nombre').textContent =
+        p.nombre + (existente ? ` (actual: ${parseFloat(existente.cantidad.toFixed(3)).toString().replace('.', ',')} kg)` : '');
+      document.getElementById('kg-inline-input').value           = existente ? existente.cantidad.toFixed(3) : '';
+      document.getElementById('kg-inline-feedback').textContent  = '';
+      document.getElementById('kg-inline').style.display         = '';
+      setTimeout(() => {
+        const inp = document.getElementById('kg-inline-input');
+        inp.focus(); inp.select();
+      }, 80);
+      return;
+    }
+
     const existing = carrito.find(i => i.id === p.id);
     if (existing) { existing.cantidad++; }
-    else { carrito.push({ id: p.id, nombre: p.nombre, precio_usd: p.precio_usd, cantidad: 1 }); }
+    else { carrito.push({ id: p.id, nombre: p.nombre, precio_usd: p.precio_usd, cantidad: 1, por_peso: false, stock: p.stock_actual }); }
     renderCarrito();
     document.getElementById('venta-buscar').focus();
   }
 
+  // Confirmar cantidad kg inline
+  function confirmarKgInline() {
+    const raw = document.getElementById('kg-inline-input').value.trim();
+    const val = parseFloat(raw);
+    const fb  = document.getElementById('kg-inline-feedback');
+    if (raw === '' || isNaN(val))  { fb.textContent = 'Ingresa una cantidad válida.'; return; }
+    if (val < 0.001)               { fb.textContent = 'La cantidad mínima es 0,001 kg (1 gramo).'; return; }
+    if (val > 9999)                { fb.textContent = 'Máximo 9.999 kg.'; return; }
+
+    const p       = _kgPendiente;
+    const cantidad = parseFloat(val.toFixed(3));
+
+    document.getElementById('kg-inline').style.display = 'none';
+    _kgPendiente = null;
+
+    const stock    = p.stock_actual ?? p.stock ?? Infinity;
+    const existing = carrito.find(i => i.id === p.id);
+    if (existing) { existing.cantidad = cantidad; }
+    else { carrito.push({ id: p.id, nombre: p.nombre, precio_usd: p.precio_usd, cantidad, por_peso: true, stock }); }
+
+    renderCarrito();
+    document.getElementById('venta-buscar').focus();
+  }
+
+  document.getElementById('btn-kg-inline-ok').addEventListener('click', confirmarKgInline);
+
+  // Protección del input kg: bloquea e/E/+/- (notación científica y signos)
+  document.getElementById('kg-inline-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') { confirmarKgInline(); return; }
+    if (['e', 'E', '+', '-'].includes(e.key)) { e.preventDefault(); }
+  });
+
+  // Protección del input kg: limpia valores pegados desde el portapapeles
+  document.getElementById('kg-inline-input').addEventListener('paste', e => {
+    e.preventDefault();
+    const texto   = (e.clipboardData || window.clipboardData).getData('text');
+    const limpio  = texto.replace(',', '.').replace(/[^\d.]/g, '');
+    const val     = parseFloat(limpio);
+    if (!isNaN(val) && val > 0 && val <= 9999) {
+      document.getElementById('kg-inline-input').value = val.toFixed(3);
+    }
+  });
+
+  // Protección del input kg: recorta en tiempo real si supera el máximo y avisa de stock
+  document.getElementById('kg-inline-input').addEventListener('input', function () {
+    const val = parseFloat(this.value);
+    const fb  = document.getElementById('kg-inline-feedback');
+    if (!isNaN(val) && val > 9999) this.value = '9999';
+    if (this.value === '' || isNaN(val) || val <= 0) { fb.textContent = ''; return; }
+    const stock = _kgPendiente ? (_kgPendiente.stock_actual ?? _kgPendiente.stock ?? null) : null;
+    if (stock !== null && stock !== Infinity && val > stock) {
+      const stockFmt = parseFloat(stock.toFixed(3)).toString().replace('.', ',');
+      fb.textContent = `⚠ Stock disponible: ${stockFmt} kg`;
+      fb.style.color = '#dc3545';
+    } else {
+      fb.textContent = '';
+    }
+  });
+
+  document.getElementById('btn-kg-inline-cancelar').addEventListener('click', () => {
+    document.getElementById('kg-inline').style.display = 'none';
+    _kgPendiente = null;
+    document.getElementById('venta-buscar').focus();
+  });
+
   function cambiarCantidad(id, delta) {
     const idx = carrito.findIndex(i => i.id === id);
     if (idx < 0) return;
-    carrito[idx].cantidad += delta;
+    const paso = carrito[idx].por_peso ? 0.1 : 1;
+    carrito[idx].cantidad = parseFloat((carrito[idx].cantidad + delta * paso).toFixed(3));
     if (carrito[idx].cantidad <= 0) carrito.splice(idx, 1);
     renderCarrito();
+  }
+
+  function editarKgCarrito(id) {
+    const item = carrito.find(i => i.id === id);
+    if (!item) return;
+    _kgPendiente = { id: item.id, nombre: item.nombre, precio_usd: item.precio_usd, vendido_por_peso: true, stock: item.stock };
+    document.getElementById('kg-inline-nombre').textContent    = item.nombre;
+    document.getElementById('kg-inline-input').value           = item.cantidad.toFixed(3);
+    document.getElementById('kg-inline-feedback').textContent  = '';
+    document.getElementById('kg-inline').style.display         = '';
+    setTimeout(() => {
+      const inp = document.getElementById('kg-inline-input');
+      inp.focus(); inp.select();
+    }, 80);
   }
 
   function renderCarrito() {
@@ -569,17 +690,49 @@
 
     let totalUsd = 0;
     itemsEl.innerHTML = carrito.map(i => {
-      const sub   = i.precio_usd * i.cantidad;
-      totalUsd   += sub;
-      const subBs = TASA_HOY ? `<span class="monto-bs">Bs. ${(sub * TASA_HOY).toFixed(2)}</span> ` : '';
-      return `<div class="carrito-item">
+      const sub      = i.precio_usd * i.cantidad;
+      totalUsd      += sub;
+      const subBs    = TASA_HOY ? `<span class="monto-bs">Bs. ${(sub * TASA_HOY).toFixed(2)}</span> ` : '';
+      const sinStock = typeof i.stock === 'number' && i.stock !== Infinity && i.cantidad > i.stock;
+      const stockFmt = sinStock
+        ? (i.por_peso
+            ? parseFloat(i.stock.toFixed(3)).toString().replace('.', ',') + ' kg'
+            : i.stock)
+        : null;
+
+      const cantDisplay = i.por_peso
+        ? parseFloat(i.cantidad.toFixed(3)).toString().replace('.', ',') + ' kg'
+        : i.cantidad;
+      const cantSpan = i.por_peso
+        ? `<span class="fw-semibold" onclick="editarKgCarrito(${i.id})" title="Clic para editar"
+                style="min-width:3.5rem; text-align:center; font-size:.88rem; cursor:pointer;
+                       background:${sinStock ? '#fee2e2' : '#f0fdf4'}; border-radius:4px; padding:1px 5px;
+                       color:${sinStock ? '#dc3545' : '#1b4332'};">${cantDisplay}</span>`
+        : `<span class="fw-semibold" style="min-width:3rem; text-align:center; font-size:.88rem;
+                  color:${sinStock ? '#dc3545' : 'inherit'};">${cantDisplay}</span>`;
+
+      const alertaHtml = sinStock
+        ? `<div style="width:100%; font-size:.75rem; color:#dc3545; padding:.15rem .25rem 0;">
+             <i class="bi bi-exclamation-triangle-fill me-1"></i>Sin stock suficiente — disponible: ${stockFmt}
+           </div>`
+        : '';
+
+      return `<div class="carrito-item" style="flex-wrap:wrap; ${sinStock ? 'background:#fff5f5; border:1px solid #fca5a5;' : ''}">
         <button class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="cambiarCantidad(${i.id},-1)">−</button>
-        <span class="fw-semibold" style="min-width:1.8rem; text-align:center;">${i.cantidad}</span>
+        ${cantSpan}
         <button class="btn btn-outline-secondary btn-sm py-0 px-2" onclick="cambiarCantidad(${i.id},1)">+</button>
         <span class="flex-grow-1 ms-2">${i.nombre}</span>
         ${subBs}<span class="text-muted" style="font-size:.82rem;">$${sub.toFixed(2)}</span>
+        ${alertaHtml}
       </div>`;
     }).join('');
+
+    const hayErrorStock = carrito.some(i => typeof i.stock === 'number' && i.stock !== Infinity && i.cantidad > i.stock);
+    const btnConfirmar  = document.getElementById('btn-confirmar-venta');
+    btnConfirmar.disabled = hayErrorStock;
+    document.getElementById('venta-feedback').textContent = hayErrorStock
+      ? 'Corrige las cantidades en rojo antes de confirmar.'
+      : '';
 
     const bsTotal = TASA_HOY
       ? `<span class="text-success">Bs. ${(totalUsd * TASA_HOY).toFixed(2)}</span> <span class="text-muted fw-normal" style="font-size:.85rem;">($ ${totalUsd.toFixed(2)} USD)</span>`
@@ -629,36 +782,66 @@
     if (sBs && TASA_HOY) {
       document.getElementById('pago-bs-display').textContent  = `Bs. ${sBs.toFixed(2)}`;
       document.getElementById('pago-usd-display').textContent = `≡ $${sUsd.toFixed(2)} USD · tasa ${TASA_HOY}`;
-      // Pre-llenar con el monto completo sugerido
-      document.getElementById('pago-monto').value = sBs.toFixed(2);
     } else {
       document.getElementById('pago-bs-display').textContent  = `$${sUsd.toFixed(2)} USD`;
       document.getElementById('pago-usd-display').textContent = '';
-      document.getElementById('pago-monto').value = sUsd.toFixed(2);
     }
 
-    document.getElementById('pago-metodo').value         = '';
-    document.getElementById('pago-notas').value          = '';
-    document.getElementById('pago-feedback').textContent = '';
-    document.getElementById('pago-equiv').style.display  = 'none';
+    // Resetear: el método va primero, el monto se pre-llena al seleccionar
+    document.getElementById('pago-metodo').value           = '';
+    document.getElementById('pago-monto').value            = '';
+    document.getElementById('pago-notas').value            = '';
+    document.getElementById('pago-feedback').textContent   = '';
+    document.getElementById('pago-equiv').style.display    = 'none';
+    document.getElementById('pago-equiv-txt').textContent  = '';
+    document.getElementById('pago-monto-label').innerHTML  = 'Monto a abonar (Bs) <span class="text-danger">*</span>';
+    document.getElementById('pago-monto-prefix').textContent = 'Bs.';
 
     modalPago.show();
-    setTimeout(() => {
-      const inp = document.getElementById('pago-monto');
-      inp.focus(); inp.select();
-    }, 300);
+    setTimeout(() => document.getElementById('pago-metodo').focus(), 300);
   }
 
-  // Preview en tiempo real: cuántos USD equivale el monto Bs ingresado
+  // Actualiza label, prefijo y pre-llena el monto según el método elegido
+  function actualizarCampoMonto(metodo) {
+    const sUsd   = parseFloat(document.getElementById('pago-saldo-usd').value);
+    const label  = document.getElementById('pago-monto-label');
+    const prefix = document.getElementById('pago-monto-prefix');
+    const input  = document.getElementById('pago-monto');
+
+    if (metodo === 'EFECTIVO_USD') {
+      label.innerHTML      = 'Monto a abonar (USD) <span class="text-danger">*</span>';
+      prefix.textContent   = '$';
+      input.value          = sUsd.toFixed(2);
+    } else {
+      label.innerHTML      = 'Monto a abonar (Bs) <span class="text-danger">*</span>';
+      prefix.textContent   = 'Bs.';
+      input.value          = TASA_HOY ? (sUsd * TASA_HOY).toFixed(2) : sUsd.toFixed(2);
+    }
+
+    document.getElementById('pago-equiv').style.display   = 'none';
+    document.getElementById('pago-equiv-txt').textContent = '';
+    if (metodo) { input.focus(); input.select(); }
+  }
+
+  document.getElementById('pago-metodo').addEventListener('change', function () {
+    actualizarCampoMonto(this.value);
+  });
+
+  // Preview en tiempo real del equivalente en la otra moneda
   document.getElementById('pago-monto').addEventListener('input', function () {
     const equiv    = document.getElementById('pago-equiv');
-    const equivUsd = document.getElementById('pago-equiv-usd');
-    if (!TASA_HOY) { equiv.style.display = 'none'; return; }
-    const monto = parseFloat(this.value);
-    if (!monto || monto <= 0) { equiv.style.display = 'none'; return; }
-    const usd = (monto / TASA_HOY).toFixed(2);
-    equivUsd.textContent  = `$${usd}`;
-    equiv.style.display   = '';
+    const equivTxt = document.getElementById('pago-equiv-txt');
+    const metodo   = document.getElementById('pago-metodo').value;
+    const monto    = parseFloat(this.value);
+
+    if (!TASA_HOY || !monto || monto <= 0) { equiv.style.display = 'none'; return; }
+
+    if (metodo === 'EFECTIVO_USD') {
+      equivTxt.textContent = `≡ Bs. ${(monto * TASA_HOY).toFixed(2)}`;
+    } else {
+      equivTxt.textContent = `≡ $${(monto / TASA_HOY).toFixed(2)} USD`;
+    }
+    equiv.style.display = '';
   });
 
   document.getElementById('btn-confirmar-pago').addEventListener('click', function () {
@@ -675,13 +858,14 @@
     this.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Registrando...';
     feedback.textContent = '';
 
-    // Si hay tasa, enviamos Bs y el backend convierte. Si no, enviamos USD directo.
     const payload = {
       metodo_pago: metodo,
       notas:       document.getElementById('pago-notas').value.trim(),
     };
-    if (TASA_HOY) { payload.monto_bs  = monto; }
-    else          { payload.monto_usd = monto; }
+    // EFECTIVO_USD → monto en dólares; resto → monto en Bs (backend convierte)
+    if (metodo === 'EFECTIVO_USD') { payload.monto_usd = monto; }
+    else if (TASA_HOY)             { payload.monto_bs  = monto; }
+    else                           { payload.monto_usd = monto; }
 
     fetch(`/fiados/pago/${fiadoPk}/`, {
       method:  'POST',

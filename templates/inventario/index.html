@@ -378,7 +378,7 @@
         <div id="preview-margen" class="mb-3 p-2 rounded" style="background:#f8f9fa; font-size:.83rem; display:none;">
           <i class="bi bi-graph-up me-1"></i>
           Margen estimado: <strong id="preview-margen-valor">—</strong>
-          &nbsp;|&nbsp; Bs.: <strong id="preview-precio-bs">—</strong>
+          &nbsp;|&nbsp; Ganancia/ud: <strong id="preview-precio-bs">—</strong>
         </div>
 
         <!-- Sección: Stock -->
@@ -586,8 +586,8 @@
       preview.style.display = 'block';
       const margen = costo > 0 ? ((precio - costo) / precio * 100).toFixed(1) : null;
       document.getElementById('preview-margen-valor').textContent = margen ? `${margen}%` : '—';
-      document.getElementById('preview-precio-bs').textContent = TASA_INV
-        ? `Bs. ${(precio * TASA_INV).toFixed(2)}`
+      document.getElementById('preview-precio-bs').textContent = (TASA_INV && costo > 0)
+        ? `Bs. ${((precio - costo) * TASA_INV).toFixed(2)}`
         : '—';
     } else {
       preview.style.display = 'none';

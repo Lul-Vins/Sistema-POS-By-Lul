@@ -4,6 +4,19 @@ register = template.Library()
 
 
 @register.filter
+def formato_bs(value):
+    """Formato venezolano: punto para miles, coma para decimal. Ej: 1.000,00"""
+    try:
+        num = float(value)
+    except (TypeError, ValueError):
+        return value
+    # f"{:,.2f}" usa coma para miles y punto para decimal (inglés)
+    # lo invertimos al formato venezolano
+    formatted = f"{num:,.2f}"
+    return formatted.replace(',', 'X').replace('.', ',').replace('X', '.')
+
+
+@register.filter
 def formato_cantidad(cantidad, por_peso):
     """
     Formatea la cantidad de un detalle de venta con su unidad.

@@ -12,10 +12,10 @@ End If
 ' ── 2. Iniciar servidor Django oculto ────────────────────────
 WShell.Run "cmd /c cd /d """ & carpeta & """ && " & _
            "call .venv\Scripts\activate.bat && " & _
-           "python manage.py runserver 127.0.0.1:8000", 0, False
+           "python manage.py runserver 0.0.0.0:8000", 0, False
 
-' ── 3. Esperar arranque del servidor (4 seg) ─────────────────
-WScript.Sleep 4000
+' ── 3. Esperar arranque del servidor (6 seg) ─────────────────
+WScript.Sleep 6000
 
 ' ── 4. Detectar Chrome o Edge ────────────────────────────────
 Dim br
@@ -38,7 +38,7 @@ If br = "" Then
     MsgBox "No se encontro Chrome ni Edge instalado." & vbCrLf & _
            "Instale Google Chrome o Microsoft Edge e intente de nuevo.", _
            vbCritical, "POS — Error"
-    WShell.Run "taskkill /F /IM python.exe /T", 0, False
+    WShell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -aon ^| findstr ""0.0.0.0:8000 ""') do taskkill /F /PID %a", 0, True
     WScript.Quit 1
 End If
 
@@ -52,4 +52,4 @@ WShell.Run """" & br & """ " & _
            "--start-maximized", 3, True
 
 ' ── 6. Al cerrar el POS, apagar el servidor ──────────────────
-WShell.Run "taskkill /F /IM python.exe /T", 0, False
+WShell.Run "cmd /c for /f ""tokens=5"" %a in ('netstat -aon ^| findstr ""0.0.0.0:8000 ""') do taskkill /F /PID %a", 0, True

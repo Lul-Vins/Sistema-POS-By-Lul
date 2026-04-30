@@ -252,16 +252,16 @@ class TasaEstadoTests(TestCase):
         self.assertFalse(data['tasa_vencida'])
         self.assertEqual(data['tasa'], 50.0)
 
-    def test_tasa_vencida_cuando_supera_15h(self):
-        momento_viejo = timezone.now() - timezone.timedelta(hours=16)
+    def test_tasa_vencida_cuando_supera_26h(self):
+        momento_viejo = timezone.now() - timezone.timedelta(hours=27)
         Moneda.objects.filter(pk=self.moneda.pk).update(ultima_actualizacion=momento_viejo)
 
         r    = self.client.get(self.url)
         data = r.json()
         self.assertTrue(data['tasa_vencida'])
 
-    def test_limite_exacto_15h_no_vencida(self):
-        momento = timezone.now() - timezone.timedelta(hours=14, minutes=59)
+    def test_limite_exacto_26h_no_vencida(self):
+        momento = timezone.now() - timezone.timedelta(hours=25, minutes=59)
         Moneda.objects.filter(pk=self.moneda.pk).update(ultima_actualizacion=momento)
 
         r    = self.client.get(self.url)

@@ -23,7 +23,7 @@ def venta(request):
     tasa_vencida = False
     if moneda:
         antigüedad = timezone.now() - moneda.ultima_actualizacion
-        tasa_vencida = antigüedad.total_seconds() > 15 * 3600
+        tasa_vencida = antigüedad.total_seconds() > 26 * 3600
 
     categorias = Categoria.objects.order_by('nombre')
 
@@ -190,7 +190,7 @@ def tasa_estado(request):
         return JsonResponse({'tasa_vencida': True, 'tasa': None, 'ultima_actualizacion': None})
 
     antigüedad    = timezone.now() - moneda.ultima_actualizacion
-    tasa_vencida  = antigüedad.total_seconds() > 15 * 3600
+    tasa_vencida  = antigüedad.total_seconds() > 26 * 3600
 
     return JsonResponse({
         'tasa_vencida':        tasa_vencida,

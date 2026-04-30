@@ -1143,7 +1143,7 @@ class DiaCompletoNarrativoTest(TestCase):
         self.assertEqual(float(cierre.efectivo_usd_esperado), 5.00)    # v1
         self.assertGreater(float(cierre.transferencia_total),  0)       # v2
         self.assertGreater(float(cierre.punto_de_venta_total), 0)       # v4
-        self.assertEqual(float(cierre.pago_movil_total),       0.0)    # v3 fue anulada
+        self.assertAlmostEqual(float(cierre.pago_movil_total), 5.00, places=2)  # v3 anulada; abono 182.50 Bs ÷ 36.50 = 5 USD
 
         # Verificar impresion del cierre accesible
         r_imp = c_admin.get(reverse('reportes:imprimir_cierre'), {'fecha': hoy})

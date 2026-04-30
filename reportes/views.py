@@ -9,6 +9,7 @@ from datetime import date
 
 from ventas.models import Venta, DetalleVenta
 from configuracion.models import Empresa, Moneda
+from fiados.models import PagoFiado
 from .models import CierreCaja
 from pos_core_lul.decorators import solo_admin
 
@@ -38,13 +39,42 @@ def index(request):
     moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first() or Empresa()
 
+    # Abonos de fiados del día
+    pagos_fiado_dia = list(
+        PagoFiado.objects
+        .filter(fecha__date=fecha)
+        .select_related('fiado__cliente')
+        .order_by('-fecha')
+    )
+    resumen_abonos = {}
+    for codigo, nombre in PagoFiado.METODO_PAGO:
+        pagos_metodo = [p for p in pagos_fiado_dia if p.metodo_pago == codigo]
+        if not pagos_metodo:
+            continue
+        resumen_abonos[codigo] = {
+            'nombre':    nombre,
+            'codigo':    codigo,
+            'total_usd': sum(float(p.monto_usd) for p in pagos_metodo),
+            'total_bs':  sum(float(p.monto_bs)  for p in pagos_metodo),
+            'cantidad':  len(pagos_metodo),
+            'pagos':     pagos_metodo,
+        }
+    resumen_abonos_lista = list(resumen_abonos.values())
+    total_abonos_usd   = sum(m['total_usd'] for m in resumen_abonos_lista)
+    total_abonos_bs    = sum(m['total_bs']  for m in resumen_abonos_lista)
+    total_abonos_count = sum(m['cantidad']  for m in resumen_abonos_lista)
+
     return render(request, 'reportes/index.html', {
-        'ventas':   ventas,
-        'resumen':  resumen,
-        'fecha':    fecha,
-        'tasa':     moneda.tasa_cambio if moneda else None,
-        'moneda':   moneda,
-        'empresa':  empresa,
+        'ventas':              ventas,
+        'resumen':             resumen,
+        'fecha':               fecha,
+        'tasa':                moneda.tasa_cambio if moneda else None,
+        'moneda':              moneda,
+        'empresa':             empresa,
+        'resumen_abonos_lista': resumen_abonos_lista,
+        'total_abonos_usd':    total_abonos_usd,
+        'total_abonos_bs':     total_abonos_bs,
+        'total_abonos_count':  total_abonos_count,
     })
 
 
@@ -105,6 +135,31 @@ def cierre_caja(request):
     total_general_bs  = sum(m['total_bs']  for m in resumen_metodos_lista)
     total_ventas      = sum(m['cantidad']  for m in resumen_metodos_lista)
 
+    # ── Abonos de fiados del día ───────────────────────────────
+    pagos_fiado_dia = list(
+        PagoFiado.objects
+        .filter(fecha__date=fecha)
+        .select_related('fiado__cliente')
+        .order_by('-fecha')
+    )
+    resumen_abonos = {}
+    for codigo, nombre in PagoFiado.METODO_PAGO:
+        pagos_metodo = [p for p in pagos_fiado_dia if p.metodo_pago == codigo]
+        if not pagos_metodo:
+            continue
+        resumen_abonos[codigo] = {
+            'nombre':    nombre,
+            'codigo':    codigo,
+            'total_usd': sum(float(p.monto_usd) for p in pagos_metodo),
+            'total_bs':  sum(float(p.monto_bs)  for p in pagos_metodo),
+            'cantidad':  len(pagos_metodo),
+            'pagos':     pagos_metodo,
+        }
+    resumen_abonos_lista = list(resumen_abonos.values())
+    total_abonos_usd   = sum(m['total_usd'] for m in resumen_abonos_lista)
+    total_abonos_bs    = sum(m['total_bs']  for m in resumen_abonos_lista)
+    total_abonos_count = sum(m['cantidad']  for m in resumen_abonos_lista)
+
     # Verificar si ya existe cierre para este día
     cierre_existente = CierreCaja.objects.filter(fecha=fecha).first()
 
@@ -115,17 +170,23 @@ def cierre_caja(request):
     empresa = Empresa.objects.first() or Empresa()
 
     return render(request, 'reportes/cierre_caja.html', {
-        'fecha': fecha,
-        'resumen_metodos': resumen_metodos,
+        'fecha':               fecha,
+        'resumen_metodos':     resumen_metodos,
         'resumen_metodos_lista': resumen_metodos_lista,
-        'total_general_usd': total_general_usd,
-        'total_general_bs':  total_general_bs,
-        'total_ventas':      total_ventas,
-        'cierre_existente':  cierre_existente,
-        'historico':         historico,
-        'moneda':            moneda,
-        'empresa':           empresa,
-        'tasa':              moneda.tasa_cambio if moneda else None,
+        'total_general_usd':   total_general_usd,
+        'total_general_bs':    total_general_bs,
+        'total_ventas':        total_ventas,
+        'resumen_abonos_lista': resumen_abonos_lista,
+        'total_abonos_usd':    total_abonos_usd,
+        'total_abonos_bs':     total_abonos_bs,
+        'total_abonos_count':  total_abonos_count,
+        'gran_total_usd':      total_general_usd + total_abonos_usd,
+        'gran_total_bs':       total_general_bs  + total_abonos_bs,
+        'cierre_existente':    cierre_existente,
+        'historico':           historico,
+        'moneda':              moneda,
+        'empresa':             empresa,
+        'tasa':                moneda.tasa_cambio if moneda else None,
     })
 
 
@@ -169,6 +230,29 @@ def imprimir_cierre(request):
     total_iva_bs            = sum(float(v.iva_bs)            for v in ventas_dia)
     total_monto_exento_bs   = sum(float(v.monto_exento_bs)   for v in ventas_dia)
 
+    # Abonos de fiados del día
+    pagos_fiado_dia = list(
+        PagoFiado.objects
+        .filter(fecha__date=fecha)
+        .select_related('fiado__cliente')
+        .order_by('fecha')
+    )
+    resumen_abonos_print = []
+    for codigo, nombre in PagoFiado.METODO_PAGO:
+        pagos_metodo = [p for p in pagos_fiado_dia if p.metodo_pago == codigo]
+        if not pagos_metodo:
+            continue
+        resumen_abonos_print.append({
+            'nombre':    nombre,
+            'codigo':    codigo,
+            'total_usd': sum(float(p.monto_usd) for p in pagos_metodo),
+            'total_bs':  sum(float(p.monto_bs)  for p in pagos_metodo),
+            'cantidad':  len(pagos_metodo),
+            'pagos':     pagos_metodo,
+        })
+    total_abonos_usd = sum(m['total_usd'] for m in resumen_abonos_print)
+    total_abonos_bs  = sum(m['total_bs']  for m in resumen_abonos_print)
+
     moneda  = Moneda.objects.first()
     empresa = Empresa.objects.first() or Empresa()
     cierre  = CierreCaja.objects.filter(fecha=fecha).first()
@@ -182,6 +266,11 @@ def imprimir_cierre(request):
         'total_base_imponible_bs': total_base_imponible_bs,
         'total_iva_bs':           total_iva_bs,
         'total_monto_exento_bs':  total_monto_exento_bs,
+        'resumen_abonos':         resumen_abonos_print,
+        'total_abonos_usd':       total_abonos_usd,
+        'total_abonos_bs':        total_abonos_bs,
+        'gran_total_usd':         total_general_usd + total_abonos_usd,
+        'gran_total_bs':          total_general_bs  + total_abonos_bs,
         'moneda':                 moneda,
         'empresa':                empresa,
         'tasa':                   moneda.tasa_cambio if moneda else None,
@@ -208,8 +297,24 @@ def guardar_cierre(request):
             totales_usd[codigo_metodo] = sum(float(v.total_usd) for v in qs)
             totales_bs[codigo_metodo] = sum(float(v.total_bs) for v in qs)
 
+        # Total ventas en USD (base para el gran total)
+        ventas_usd_total = sum(float(v.total_usd) for v in ventas_dia)
+
+        # Sumar abonos de fiados al cierre del día (por método) y guardar total separado
+        pagos_dia = list(PagoFiado.objects.filter(fecha__date=fecha))
+        abonos_usd_total = 0.0
+        abonos_bs_total  = 0.0
+        for p in pagos_dia:
+            abonos_usd_total += float(p.monto_usd)
+            abonos_bs_total  += float(p.monto_bs)
+            totales_usd[p.metodo_pago] = totales_usd.get(p.metodo_pago, 0) + float(p.monto_usd)
+            totales_bs[p.metodo_pago]  = totales_bs.get(p.metodo_pago,  0) + float(p.monto_bs)
+
+        # Gran total = ventas USD + todos los abonos en USD (sin doble conteo)
+        gran_total_usd = ventas_usd_total + abonos_usd_total
+
         efectivo_usd = totales_usd.get('EFECTIVO_USD', 0)
-        efectivo_bs = totales_bs.get('EFECTIVO_BS', 0)
+        efectivo_bs  = totales_bs.get('EFECTIVO_BS', 0)
 
         cierre, created = CierreCaja.objects.update_or_create(
             fecha=fecha,
@@ -225,6 +330,9 @@ def guardar_cierre(request):
                 'transferencia_total': totales_usd.get('TRANSFERENCIA', 0),
                 'pago_movil_total': totales_usd.get('PAGO_MOVIL', 0),
                 'mixto_total': totales_usd.get('MIXTO', 0),
+                'abonos_usd_total': abonos_usd_total,
+                'abonos_bs_total':  abonos_bs_total,
+                'gran_total_usd':   gran_total_usd,
                 'notas': notas,
             }
         )

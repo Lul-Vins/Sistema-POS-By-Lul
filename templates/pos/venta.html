@@ -297,6 +297,28 @@
     border-bottom: none;
   }
 
+  .carrito-item.stock-error {
+    border-left: 3px solid #dc3545;
+    background: #fff5f5;
+    padding-left: calc(0.6rem - 3px);
+  }
+
+  .carrito-item .stock-alerta {
+    font-size: .68rem;
+    color: #dc3545;
+    line-height: 1.3;
+    margin-top: 1px;
+    width: 100%;
+  }
+
+  .qty-num-unit {
+    cursor: pointer;
+    border-radius: 4px;
+    padding: 1px 5px;
+    transition: background .12s;
+  }
+  .qty-num-unit:hover { background: #e9ecef; }
+
   .carrito-item .item-info {
     flex: 1;
     min-width: 0; /* permite que el texto se comprima en el flex */
@@ -838,7 +860,12 @@
 
         // Lector de barras: si hay exactamente 1 resultado, agrégalo y limpia
         if (agregarDirecto && productos.length === 1) {
-          agregarAlCarrito(productos[0].id, productos[0].nombre, productos[0].precio_usd);
+          const p = productos[0];
+          if (p.vendido_por_peso) {
+            abrirDialogoKg(p.id, p.nombre, p.precio_usd, p.stock_actual);
+          } else {
+            agregarAlCarrito(p.id, p.nombre, p.precio_usd, false, 1, p.stock_actual);
+          }
           buscador.value = '';
           if (catSeleccionada) {
             buscar('', false, catSeleccionada);
@@ -883,6 +910,7 @@
            data-id="${p.id}"
            data-nombre-producto="${p.nombre}"
            data-precio="${p.precio_usd}"
+           data-stock="${p.stock_actual}"
            data-por-peso="${p.vendido_por_peso ? 'true' : 'false'}">
         <div class="card-img-wrap">${imgHtml}</div>
         <div class="card-body">
@@ -906,15 +934,16 @@
   grid.addEventListener('click', function (e) {
     const card = e.target.closest('.producto-card');
     if (!card) return;
+    const stock = parseFloat(card.dataset.stock);
     if (card.dataset.porPeso === 'true') {
-      abrirDialogoKg(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio));
+      abrirDialogoKg(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), stock);
     } else {
-      agregarAlCarrito(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), false, 1);
+      agregarAlCarrito(card.dataset.id, card.dataset.nombreProducto, parseFloat(card.dataset.precio), false, 1, stock);
     }
   });
 
   // ── Diálogo de cantidad en kg ───────────────────────────────
-  function abrirDialogoKg(id, nombre, precioUsd) {
+  function abrirDialogoKg(id, nombre, precioUsd, stock = null) {
     document.getElementById('kg-dialog-nombre').textContent = nombre;
     document.getElementById('kg-dialog-precio').textContent =
       `$ ${precioUsd.toFixed(2)}/kg`;
@@ -922,7 +951,7 @@
       ? carrito[id].cantidad.toFixed(3)
       : '';
 
-    _kgPendiente = { id, nombre, precioUsd };
+    _kgPendiente = { id, nombre, precioUsd, stock: stock ?? carrito[id]?.stock ?? null };
     new bootstrap.Modal(document.getElementById('modalKg')).show();
     setTimeout(() => document.getElementById('kg-input').focus(), 300);
   }
@@ -931,7 +960,14 @@
 
   document.getElementById('btn-kg-ok').addEventListener('click', confirmarKg);
   document.getElementById('kg-input').addEventListener('keydown', e => {
+    if (['e','E','+','-'].includes(e.key)) { e.preventDefault(); return; }
     if (e.key === 'Enter') confirmarKg();
+  });
+  document.getElementById('kg-input').addEventListener('paste', e => {
+    e.preventDefault();
+    const txt = (e.clipboardData || window.clipboardData).getData('text')
+      .replace(/[^\d.]/g, '').replace(',', '.');
+    e.target.value = txt;
   });
 
   function confirmarKg() {
@@ -944,14 +980,18 @@
       document.getElementById('kg-feedback').textContent = 'La cantidad no puede superar 9.999 kg.';
       return;
     }
-    const { id, nombre, precioUsd } = _kgPendiente;
+    const { id, nombre, precioUsd, stock } = _kgPendiente;
     bootstrap.Modal.getInstance(document.getElementById('modalKg')).hide();
-    agregarAlCarrito(id, nombre, precioUsd, true, parseFloat(val.toFixed(3)));
+    agregarAlCarrito(id, nombre, precioUsd, true, parseFloat(val.toFixed(3)), stock);
   }
 
   // ── Lógica del carrito ─────────────────────────────────────
-  function agregarAlCarrito(id, nombre, precioUsd, porPeso, cantidad) {
-    carrito[id] = { nombre, precio_usd: precioUsd, cantidad, por_peso: porPeso };
+  function agregarAlCarrito(id, nombre, precioUsd, porPeso, cantidad, stock = null) {
+    if (carrito[id] && !porPeso) {
+      carrito[id].cantidad += cantidad;
+    } else {
+      carrito[id] = { nombre, precio_usd: precioUsd, cantidad, por_peso: porPeso, stock };
+    }
     renderCarrito();
     buscador.focus();
   }
@@ -966,7 +1006,41 @@
 
   function editarCantidadKg(id) {
     if (!carrito[id]) return;
-    abrirDialogoKg(id, carrito[id].nombre, carrito[id].precio_usd);
+    abrirDialogoKg(id, carrito[id].nombre, carrito[id].precio_usd, carrito[id].stock);
+  }
+
+  function editarCantidadUnidad(id) {
+    if (!carrito[id]) return;
+    const contenedor = document.getElementById('carrito-items');
+    const el   = contenedor.querySelector(`.carrito-item[data-id="${id}"]`);
+    if (!el) return;
+    const span = el.querySelector('.qty-num-unit');
+    if (!span) return;
+
+    const inp = document.createElement('input');
+    inp.type  = 'number';
+    inp.min   = '1';
+    inp.max   = '9999';
+    inp.step  = '1';
+    inp.value = carrito[id].cantidad;
+    inp.style.cssText = 'width:52px;text-align:center;font-size:.9rem;font-weight:700;border:1px solid #2d6a4f;border-radius:4px;padding:1px 4px;';
+
+    function confirmar() {
+      const val = parseInt(inp.value);
+      if (!isNaN(val) && val >= 1 && val <= 9999) carrito[id].cantidad = val;
+      renderCarrito();
+    }
+
+    inp.addEventListener('keydown', e => {
+      if (['e','E','+','-','.'].includes(e.key)) { e.preventDefault(); return; }
+      if (e.key === 'Enter')  { inp.removeEventListener('blur', confirmar); confirmar(); return; }
+      if (e.key === 'Escape') { inp.removeEventListener('blur', confirmar); renderCarrito(); return; }
+    });
+    inp.addEventListener('blur', confirmar);
+
+    span.replaceWith(inp);
+    inp.focus();
+    inp.select();
   }
 
   function vaciarCarrito() {
@@ -992,9 +1066,8 @@
     }
 
     vacio.style.display = 'none';
-    btnCobrar.disabled  = TASA_VENCIDA;
 
-    let totalUsd = 0, totalItems = 0;
+    let totalUsd = 0, totalItems = 0, hayStockError = false;
 
     ids.forEach(id => {
       const item        = carrito[id];
@@ -1002,13 +1075,24 @@
       totalUsd   += subtotalUsd;
       totalItems += item.por_peso ? 1 : item.cantidad;
 
+      const sinStock = item.stock !== null && item.stock !== undefined && item.cantidad > item.stock;
+      if (sinStock) hayStockError = true;
+
       const el = document.createElement('div');
-      el.className  = 'carrito-item';
+      el.className  = 'carrito-item' + (sinStock ? ' stock-error' : '');
       el.dataset.id = id;
       const precioLabel = item.por_peso
         ? `$ ${item.precio_usd.toFixed(2)}/kg`
         : `$ ${item.precio_usd.toFixed(2)} c/u`;
       const kgDisplay = parseFloat(item.cantidad.toFixed(3)).toString().replace('.', ',');
+      const stockDisp = item.stock !== null && item.stock !== undefined
+        ? (item.por_peso
+            ? parseFloat(item.stock.toFixed(3)).toString().replace('.', ',') + ' kg'
+            : item.stock)
+        : null;
+      const alertaHtml = sinStock
+        ? `<div class="stock-alerta"><i class="bi bi-exclamation-triangle-fill me-1"></i>Stock insuficiente — disponible: ${stockDisp}</div>`
+        : '';
       const qtyHtml = item.por_peso
         ? `<div class="qty-control">
              <button onclick="cambiarCantidad(${id}, -1)">−</button>
@@ -1020,13 +1104,14 @@
            </div>`
         : `<div class="qty-control">
              <button onclick="cambiarCantidad(${id}, -1)">−</button>
-             <span class="qty-num">${item.cantidad}</span>
+             <span class="qty-num qty-num-unit" onclick="editarCantidadUnidad('${id}')" title="Clic para editar">${item.cantidad}</span>
              <button onclick="cambiarCantidad(${id}, +1)">+</button>
            </div>`;
       el.innerHTML  = `
         <div class="item-info">
           <div class="item-nombre" title="${item.nombre}">${truncar(item.nombre)}</div>
           <div class="item-precio">${precioLabel}</div>
+          ${alertaHtml}
         </div>
         ${qtyHtml}
         <div class="item-subtotal">$ ${subtotalUsd.toFixed(2)}</div>`;
@@ -1034,6 +1119,7 @@
     });
 
     countBadge.textContent = totalItems;
+    btnCobrar.disabled = TASA_VENCIDA || hayStockError;
     actualizarTotales(totalUsd);
   }
 

@@ -49,6 +49,18 @@
   .metodo-efectivo-bs  .metodo-total { color: #40916c; }
   .metodo-digital      { border-left-color: #0c63e4; }
   .metodo-digital      .metodo-total { color: #0c63e4; }
+  .metodo-abono        { border-left-color: #d97706; }
+  .metodo-abono .metodo-total { color: #d97706; }
+
+  .abonos-titulo {
+    display: flex; align-items: center; gap: .6rem;
+    font-size: .92rem; font-weight: 700; color: #92400e;
+    margin: 1.5rem 0 .75rem;
+    padding: .5rem .75rem;
+    background: #fffbeb;
+    border-radius: 8px;
+    border: 1px solid #fde68a;
+  }
 
   .accordion-button {
     background: transparent;
@@ -186,18 +198,32 @@
     background: #1a1a2e; color: #fff; font-weight: 800; font-size: 12px;
     text-transform: uppercase; letter-spacing: 1px; padding: 6px 12px;
   }
-  #area-impresion .pi-totales-body {
-    padding: 10px 12px; display: grid; grid-template-columns: 1fr 1fr; gap: 5px 18px;
+  #area-impresion .pi-totales-body { padding: 0; }
+  #area-impresion .pi-res-tabla { width: 100%; border-collapse: collapse; font-size: 11px; }
+  #area-impresion .pi-res-tabla thead th {
+    padding: 5px 10px; font-size: 10px; font-weight: 700; color: #666;
+    text-transform: uppercase; letter-spacing: .4px;
+    border-bottom: 1px solid #e0e0e0; text-align: right;
   }
-  #area-impresion .pi-tot-item {
-    display: flex; justify-content: space-between; align-items: baseline; gap: 8px;
+  #area-impresion .pi-res-tabla thead th:first-child { text-align: left; }
+  #area-impresion .pi-res-tabla td {
+    padding: 6px 10px; border-bottom: 1px solid #f0f0f0; text-align: right;
   }
-  #area-impresion .pi-tot-item .tl { font-size: 10.5px; color: #555; }
-  #area-impresion .pi-tot-item .tv { font-size: 14px; font-weight: 800; color: #1a1a2e; }
-  #area-impresion .pi-tot-item .tv-bs { font-size: 14px; font-weight: 800; color: #2d6a4f; }
+  #area-impresion .pi-res-tabla td:first-child { text-align: left; color: #555; font-size: 10.5px; }
+  #area-impresion .pi-res-tabla .td-usd  { font-weight: 700; color: #1a1a2e; font-size: 13px; }
+  #area-impresion .pi-res-tabla .td-bs   { font-weight: 700; color: #2d6a4f; font-size: 13px; }
+  #area-impresion .pi-res-tabla .fila-total td {
+    border-top: 2px solid #1a1a2e; border-bottom: none;
+    padding-top: 8px; background: #f8f9fa;
+  }
+  #area-impresion .pi-res-tabla .fila-total td:first-child {
+    font-weight: 800; color: #1a1a2e; font-size: 11.5px; text-transform: uppercase; letter-spacing: .4px;
+  }
+  #area-impresion .pi-res-tabla .fila-total .td-usd { font-size: 15px; }
+  #area-impresion .pi-res-tabla .fila-total .td-bs  { font-size: 15px; }
   #area-impresion .pi-tasa-nota {
-    grid-column: 1 / -1; font-size: 10px; color: #777;
-    border-top: 1px solid #eee; padding-top: 7px; margin-top: 3px;
+    font-size: 10px; color: #777; padding: 6px 10px;
+    border-top: 1px solid #eee; margin-top: 2px;
   }
 
   #area-impresion .pi-notas {
@@ -262,11 +288,12 @@
           <span class="metodo-cantidad">({{ metodo.cantidad }} transacción{% if metodo.cantidad != 1 %}es{% endif %})</span>
         </div>
         <div style="text-align: right;">
-          {% if metodo.codigo == 'EFECTIVO_BS' %}
-            <span class="metodo-total">Bs. {{ metodo.total_bs|floatformat:2 }}</span>
-          {% else %}
+          {% if metodo.codigo == 'EFECTIVO_USD' %}
             <span class="metodo-total">$ {{ metodo.total_usd|floatformat:2 }}</span>
             <div style="font-size: .8rem; color: #6c757d; margin-top: 2px;">Bs. {{ metodo.total_bs|floatformat:2 }}</div>
+          {% else %}
+            <span class="metodo-total">Bs. {{ metodo.total_bs|floatformat:2 }}</span>
+            <div style="font-size: .8rem; color: #6c757d; margin-top: 2px;">$ {{ metodo.total_usd|floatformat:2 }}</div>
           {% endif %}
         </div>
       </div>
@@ -291,11 +318,12 @@
                   </span>
                 </div>
                 <div style="text-align: right; flex-shrink: 0;">
-                  {% if metodo.codigo == 'EFECTIVO_BS' %}
-                    <span class="transaccion-total">Bs. {{ venta.total_bs|floatformat:2 }}</span>
-                  {% else %}
+                  {% if metodo.codigo == 'EFECTIVO_USD' %}
                     <span class="transaccion-total">$ {{ venta.total_usd|floatformat:2 }}</span>
                     <div style="font-size: .78rem; color: #6c757d; margin-top: 1px;">Bs. {{ venta.total_bs|floatformat:2 }}</div>
+                  {% else %}
+                    <span class="transaccion-total">Bs. {{ venta.total_bs|floatformat:2 }}</span>
+                    <div style="font-size: .78rem; color: #6c757d; margin-top: 1px;">$ {{ venta.total_usd|floatformat:2 }}</div>
                   {% endif %}
                 </div>
               </div>
@@ -309,6 +337,92 @@
   {% empty %}
     <p class="text-center text-muted py-4">No hay ventas registradas para este día.</p>
   {% endfor %}
+
+  <!-- ── Abonos de Fiados ─────────────────────────────────── -->
+  {% if resumen_abonos_lista %}
+  <div class="abonos-titulo">
+    <i class="bi bi-arrow-return-right"></i>
+    Abonos de Fiados cobrados hoy
+    <span style="background:#fef3c7; color:#92400e; border:1px solid #fcd34d; border-radius:20px; font-size:.75rem; padding:2px 9px;">
+      {{ total_abonos_count }} abono{% if total_abonos_count != 1 %}s{% endif %}
+    </span>
+  </div>
+
+  {% for am in resumen_abonos_lista %}
+  <div class="metodo-contenedor metodo-abono">
+    <div class="metodo-header">
+      <div>
+        <span class="metodo-nombre">{{ am.nombre }}</span>
+        <span class="metodo-cantidad">({{ am.cantidad }} abono{% if am.cantidad != 1 %}s{% endif %})</span>
+      </div>
+      <div style="text-align: right;">
+        {% if am.codigo == 'EFECTIVO_USD' %}
+          <span class="metodo-total">$ {{ am.total_usd|floatformat:2 }}</span>
+          <div style="font-size: .8rem; color: #6c757d; margin-top: 2px;">Bs. {{ am.total_bs|floatformat:2 }}</div>
+        {% else %}
+          <span class="metodo-total">Bs. {{ am.total_bs|floatformat:2 }}</span>
+          <div style="font-size: .8rem; color: #6c757d; margin-top: 2px;">$ {{ am.total_usd|floatformat:2 }}</div>
+        {% endif %}
+      </div>
+    </div>
+
+    <div class="accordion mt-2" id="accordion-abono-{{ am.codigo|lower }}">
+      <div class="accordion-item border-0 bg-transparent">
+        <h2 class="accordion-header">
+          <button class="accordion-button collapsed" type="button"
+                  data-bs-toggle="collapse"
+                  data-bs-target="#collapse-abono-{{ am.codigo|lower }}">
+            <i class="bi bi-person-lines-fill me-2"></i>Ver abonos
+          </button>
+        </h2>
+        <div id="collapse-abono-{{ am.codigo|lower }}" class="accordion-collapse collapse">
+          <div class="accordion-body">
+            {% for pago in am.pagos %}
+            <div class="transaccion-item" style="border-left-color: #d97706;">
+              <div class="transaccion-info">
+                <span class="transaccion-hora">Fiado #{{ pago.fiado.id }} &nbsp;{{ pago.fecha|date:"H:i" }}</span>
+                <span class="transaccion-productos">{{ pago.fiado.cliente.nombre }}</span>
+              </div>
+              <div style="text-align: right; flex-shrink: 0;">
+                {% if am.codigo == 'EFECTIVO_USD' %}
+                  <span class="transaccion-total">$ {{ pago.monto_usd|floatformat:2 }}</span>
+                  <div style="font-size: .78rem; color: #6c757d; margin-top: 1px;">Bs. {{ pago.monto_bs|floatformat:2 }}</div>
+                {% else %}
+                  <span class="transaccion-total">Bs. {{ pago.monto_bs|floatformat:2 }}</span>
+                  <div style="font-size: .78rem; color: #6c757d; margin-top: 1px;">$ {{ pago.monto_usd|floatformat:2 }}</div>
+                {% endif %}
+              </div>
+            </div>
+            {% endfor %}
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+
+  <!-- Gran total del día (ventas + abonos) -->
+  <div style="background:#f0fdf4; border:1px solid #bbf7d0; border-radius:10px; padding:1rem 1.25rem; margin-bottom:1.5rem;">
+    <div style="font-size:.8rem; font-weight:700; color:#166534; text-transform:uppercase; letter-spacing:.05em; margin-bottom:.6rem;">
+      Total general del día
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.2rem;">
+      <span style="font-size:.85rem; color:#6c757d;">Ventas ({{ total_ventas }})</span>
+      <span style="font-size:.9rem; font-weight:600; color:#374151;">Bs. {{ total_general_bs|floatformat:2 }}</span>
+    </div>
+    <div style="display:flex; justify-content:space-between; align-items:baseline; margin-bottom:.5rem;">
+      <span style="font-size:.85rem; color:#6c757d;">Abonos ({{ total_abonos_count }})</span>
+      <span style="font-size:.9rem; font-weight:600; color:#92400e;">Bs. {{ total_abonos_bs|floatformat:2 }}</span>
+    </div>
+    <div style="border-top:1px solid #bbf7d0; padding-top:.5rem; display:flex; justify-content:space-between; align-items:baseline;">
+      <span style="font-size:1rem; font-weight:700; color:#166534;">Total ingresado</span>
+      <div style="text-align:right;">
+        <div style="font-size:1.4rem; font-weight:800; color:#1a1a2e;">Bs. {{ gran_total_bs|floatformat:2 }}</div>
+        <div style="font-size:.8rem; color:#6c757d;">$ {{ gran_total_usd|floatformat:2 }}</div>
+      </div>
+    </div>
+  </div>
+  {% endif %}
 
   <!-- Notas -->
   <div style="margin-top: 1.5rem;">
@@ -402,10 +516,10 @@
                 {{ metodo.cantidad }} transacción{% if metodo.cantidad != 1 %}es{% endif %}
               </span>
               <span class="pi-st">
-                {% if metodo.codigo == 'EFECTIVO_BS' %}
-                  Bs. {{ metodo.total_bs|floatformat:2 }}
-                {% else %}
+                {% if metodo.codigo == 'EFECTIVO_USD' %}
                   $ {{ metodo.total_usd|floatformat:2 }}
+                {% else %}
+                  Bs. {{ metodo.total_bs|floatformat:2 }}
                 {% endif %}
               </span>
             </div>
@@ -444,22 +558,78 @@
             <p style="text-align:center; color:#999; padding:24px 0;">No hay ventas registradas para este día.</p>
           {% endfor %}
 
-          <!-- Totales generales -->
+          <!-- Abonos de fiados en el print -->
+          {% if resumen_abonos_lista %}
+          <div class="pi-seccion" style="margin-top:8px;">
+            <div class="pi-seccion-header" style="background:#92400e;">
+              <span>Abonos de Fiados &nbsp;·&nbsp; {{ total_abonos_count }} abono{% if total_abonos_count != 1 %}s{% endif %}</span>
+            </div>
+            {% for am in resumen_abonos_lista %}
+            <table style="margin-top:4px;">
+              <thead>
+                <tr>
+                  <th colspan="2">{{ am.nombre }} ({{ am.cantidad }})</th>
+                  <th class="r">USD</th>
+                  <th class="r">Bs.</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for pago in am.pagos %}
+                <tr>
+                  <td style="width:48px;">{{ pago.fecha|date:"H:i" }}</td>
+                  <td>Fiado #{{ pago.fiado.id }} — {{ pago.fiado.cliente.nombre }}</td>
+                  <td class="r">$ {{ pago.monto_usd|floatformat:2 }}</td>
+                  <td class="r">Bs. {{ pago.monto_bs|floatformat:2 }}</td>
+                </tr>
+                {% endfor %}
+                <tr class="pi-subtotal">
+                  <td colspan="2">Subtotal {{ am.nombre }}</td>
+                  <td class="r">$ {{ am.total_usd|floatformat:2 }}</td>
+                  <td class="r">Bs. {{ am.total_bs|floatformat:2 }}</td>
+                </tr>
+              </tbody>
+            </table>
+            {% endfor %}
+          </div>
+          {% endif %}
+
+          <!-- Resumen financiero del día -->
           <div class="pi-totales">
-            <div class="pi-totales-header">Total General del Día</div>
+            <div class="pi-totales-header">Resumen Financiero del Día</div>
             <div class="pi-totales-body">
-              <div class="pi-tot-item">
-                <span class="tl">Total USD</span>
-                <span class="tv">$ {{ total_general_usd|floatformat:2 }}</span>
-              </div>
-              <div class="pi-tot-item">
-                <span class="tl">Total Bolívares</span>
-                <span class="tv-bs">Bs. {{ total_general_bs|floatformat:2 }}</span>
-              </div>
+              <table class="pi-res-tabla">
+                <thead>
+                  <tr>
+                    <th>Concepto</th>
+                    <th>Equivalente USD</th>
+                    <th>Equivalente Bs.</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Ventas completadas ({{ total_ventas }} transacc.)</td>
+                    <td class="td-usd">$ {{ total_general_usd|floatformat:2 }}</td>
+                    <td class="td-bs">Bs. {{ total_general_bs|floatformat:2 }}</td>
+                  </tr>
+                  {% if resumen_abonos_lista %}
+                  <tr>
+                    <td>Abonos de fiados cobrados ({{ total_abonos_count }} abono{{ total_abonos_count|pluralize }})</td>
+                    <td class="td-usd" style="color:#d97706;">$ {{ total_abonos_usd|floatformat:2 }}</td>
+                    <td class="td-bs"  style="color:#d97706;">Bs. {{ total_abonos_bs|floatformat:2 }}</td>
+                  </tr>
+                  {% endif %}
+                  <tr class="fila-total">
+                    <td>Total ingresado en el día</td>
+                    <td class="td-usd">$ {{ gran_total_usd|floatformat:2 }}</td>
+                    <td class="td-bs">Bs. {{ gran_total_bs|floatformat:2 }}</td>
+                  </tr>
+                </tbody>
+              </table>
               {% if tasa %}
               <div class="pi-tasa-nota">
-                Tasa de cambio: <strong>Bs. {{ tasa }} / $1 USD</strong>
+                Tasa de referencia BCV: <strong>Bs. {{ tasa }} / $1 USD</strong>
                 {% if moneda %} · Actualizada: {{ moneda.ultima_actualizacion|date:"d/m/Y H:i" }}{% endif %}
+                &nbsp;·&nbsp; Los montos en Bs. de ventas reflejan la tasa vigente al momento de cada transacción.
               </div>
               {% endif %}
             </div>
@@ -517,12 +687,14 @@
           <th>Transferencia</th>
           <th>Pago Móvil</th>
           <th>Mixto</th>
+          <th style="background:#92400e;">Abonos</th>
+          <th style="background:#0f4c35;">Total día</th>
         </tr>
       </thead>
       <tbody>
         {% for c in historico %}
         <tr>
-          <td>{{ c.fecha|date:"d/m/Y" }}</td>
+          <td><a href="{% url 'reportes:cierre_caja' %}?fecha={{ c.fecha|date:'Y-m-d' }}" style="color:inherit;">{{ c.fecha|date:"d/m/Y" }}</a></td>
           <td>$ {{ c.efectivo_usd_esperado|floatformat:2 }}</td>
           <td>Bs. {{ c.efectivo_bs_esperado|floatformat:2 }}</td>
           <td>$ {{ c.punto_de_venta_total|floatformat:2 }}</td>
@@ -530,6 +702,12 @@
           <td>$ {{ c.transferencia_total|floatformat:2 }}</td>
           <td>$ {{ c.pago_movil_total|floatformat:2 }}</td>
           <td>$ {{ c.mixto_total|floatformat:2 }}</td>
+          <td style="color:#92400e; font-weight:600;">
+            {% if c.abonos_usd_total %}$ {{ c.abonos_usd_total|floatformat:2 }}{% else %}—{% endif %}
+          </td>
+          <td style="color:#0f4c35; font-weight:700;">
+            $ {{ c.total_dia_usd|floatformat:2 }}
+          </td>
         </tr>
         {% endfor %}
       </tbody>

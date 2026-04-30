@@ -17,10 +17,10 @@ call .venv\Scripts\activate.bat
 
 REM ── Iniciar servidor Django en segundo plano ──────────────────
 echo  Iniciando servidor, por favor espere...
-start /B python manage.py runserver 0.0.0.0:8000
+start /B "" python manage.py runserver 0.0.0.0:8000
 
-REM ── Esperar arranque (4 seg) ──────────────────────────────────
-timeout /t 4 /nobreak >nul
+REM ── Esperar arranque (6 seg) ──────────────────────────────────
+timeout /t 6 /nobreak >nul
 
 REM ── Detectar Chrome o Edge instalado ─────────────────────────
 set "BR="
@@ -50,5 +50,7 @@ REM ── Al cerrar la ventana del POS, apagar el servidor ──────�
 :cerrar
 title POS — Cerrando...
 echo  Cerrando servidor...
-taskkill /F /IM python.exe /T >nul 2>&1
+for /f "tokens=5" %%a in ('netstat -aon ^| findstr "0.0.0.0:8000 "') do (
+    taskkill /F /PID %%a >nul 2>&1
+)
 timeout /t 2 /nobreak >nul

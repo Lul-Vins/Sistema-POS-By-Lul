@@ -190,7 +190,7 @@ def nueva_venta_fiada(request, cliente_pk):
         items = []
         for item in carrito_raw:
             producto = get_object_or_404(Producto, pk=item['id'], activo=True)
-            items.append({'producto': producto, 'cantidad': int(item['cantidad'])})
+            items.append({'producto': producto, 'cantidad': Decimal(str(item['cantidad']))})
 
         fiado = Fiado.crear_desde_carrito(items, cliente, vendedor=request.user, notas=notas)
 
