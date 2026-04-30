@@ -7,7 +7,8 @@ echo.
 cd /d "%~dp0"
 
 echo [1/3] Descargando actualizacion...
-git pull origin main
+git fetch origin main
+git reset --hard origin/main
 if %errorlevel% neq 0 (
     echo ERROR: No se pudo descargar la actualizacion.
     echo Verifica la conexion a internet.
