@@ -5,4 +5,4 @@ class InventarioConfig(AppConfig):
     name = 'inventario'
 
 
-# Jojojo
+# Jojojo v33333333
